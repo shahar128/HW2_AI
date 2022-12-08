@@ -53,26 +53,27 @@
 # x.pop('1')
 # print(x)
 
-x = {"taxi 1": [0,1,2,3], "taxi 2": [0,1,2,3,4], "taxi 3": [7,8]}
-from itertools import product
-def my_product(inp):
-    return (list(zip(inp.keys(), values)) for values in product(*inp.values()))
-# print(list(my_product(x)))
-
-
-dana_loc = [(0,1), (0,0),"taxi1","taxi2"]
-dana_dest = [(3,3),(5,5)]
-
-ofer_loc = [(1,1), (0,0)]
-ofer_dest = [(13,3),(25,5)]
-z = []
-
-for loc in dana_loc:
-    for dest in dana_dest:
-        temp = {"loc": loc, "dest": dest,}
-        z.append(temp)
-print(z)
-f = {"dana": z, "ofer": z}
-print("000")
-# y = {"dana": [{"loc": "taxi 1", "dest": (0,1)}, {"loc": (1,2), "dest": (0,1)}], "ofer": ["taxi 1", "taxi 2", None] }
-print(list(my_product(f)))
+# x = {"taxi 1": [0,1,2,3], "taxi 2": [0,1,2,3,4], "taxi 3": [7,8]}
+# from itertools import product
+# def my_product(inp):
+#     return (list(zip(inp.keys(), values)) for values in product(*inp.values()))
+# # print(list(my_product(x)))
+#
+#
+# dana_loc = [(0,1), (0,0),"taxi1","taxi2"]
+# dana_dest = [(3,3),(5,5)]
+#
+# ofer_loc = [(1,1), (0,0)]
+# ofer_dest = [(13,3),(25,5)]
+# z = []
+#
+# for loc in dana_loc:
+#     for dest in dana_dest:
+#         temp = {"loc": loc, "dest": dest,}
+#         z.append(temp)
+# print(z)
+# f = {"dana": z, "ofer": z}
+# print("000")
+# # y = {"dana": [{"loc": "taxi 1", "dest": (0,1)}, {"loc": (1,2), "dest": (0,1)}], "ofer": ["taxi 1", "taxi 2", None] }
+# print(list(my_product(f)))
+print(("ofer",))
