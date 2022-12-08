@@ -1,6 +1,8 @@
 import itertools
 from itertools import product
 import json
+import copy
+
 
 
 def my_product(inp):
@@ -106,6 +108,70 @@ def actions(state, initial):
         final_prod_actions.append(terminate)
         final_prod_actions.append(reset)
         return tuple(final_prod_actions)
+
+def result(initial,state, action):
+    """Return the states and possibilities that results from executing the given
+    action in the given state."""
+    # state = json.loads(state)
+    num_taxis = len(state["state"]["taxis"].keys())
+    if num_taxis == 1:
+        action = [list(action)]
+    else:
+        action = list(action)  # []
+    new_state = copy.deepcopy(state)
+
+    for act in action:
+        verb = act[0]
+        if verb == "move":
+            taxi_name = act[1]
+            dest = act[2]
+            new_state["state"]["taxis"][taxi_name]["location"] = dest
+            new_state["state"]["taxis"][taxi_name]["fuel"] -= 1
+
+        elif verb == 'pick up':
+            taxi_name = act[1]
+            passenger = act[2]
+            new_state["state"]["passengers"][passenger]["location"] = taxi_name
+
+        elif verb == 'drop off':
+            taxi_name = act[1]
+            passenger = act[2]
+            new_state["state"]["passengers"][passenger]["location"] = new_state["state"]["taxis"][taxi_name]["location"]
+
+        elif verb == 'refuel':
+            taxi_name = act[1]
+            new_state["state"]["taxis"][taxi_name]["fuel"] = initial["taxis"][taxi_name]["fuel"]
+
+        elif verb == 'terminate':
+            pass
+        elif verb == 'reset':
+            new_initial = copy.deepcopy(initial)
+            del new_initial["optimal"]
+            del new_initial["map"]
+            for taxi in new_initial["taxis"].keys():
+                del new_initial["taxis"][taxi]["capacity"]
+                return new_initial
+    return new_state
+
+def turn_to_stoch(state, dests):
+    stoch_states = {}
+    for dest in dests:
+        new_state = copy.deepcopy(state)
+        prob = 1
+        for item in dest:
+            pass_name = item[0]
+            pass_dest = item[1]
+            curr_dest = state["state"]["passengers"][pass_name]["destination"]
+            prob_change = state["state"]["passengers"][pass_name]["prob_change_goal"]
+            if pass_dest == curr_dest:
+                prob *= (1 - prob_change) + (prob_change/len(state["state"]["passengers"][pass_name]["possible_goals"]))
+            else:
+                new_state["state"]["passengers"][pass_name]["destination"] = pass_dest
+                prob *= (prob_change/len(state["state"]["passengers"][pass_name]["possible_goals"]))
+        prob = round(prob,6)
+        hash_val = hash(json.dumps(new_state["state"]))
+        stoch_states[hash_val] = prob
+    return stoch_states
 
 ids = ["111111111", "222222222"]
 
@@ -221,6 +287,8 @@ class OptimalTaxiAgent:
                 hash_val = hash(json.dumps(temp_state))
                 states_dict[hash_val] = {"state": temp_state, "action": None, "value": 0}
         print(states_dict)
+
+
 
     def act(self, state):
         return 0

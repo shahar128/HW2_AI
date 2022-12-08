@@ -76,4 +76,8 @@
 # print("000")
 # # y = {"dana": [{"loc": "taxi 1", "dest": (0,1)}, {"loc": (1,2), "dest": (0,1)}], "ofer": ["taxi 1", "taxi 2", None] }
 # print(list(my_product(f)))
-print(("ofer",))
+import json
+
+x = -8366790848761051619
+y = {'taxis': {'taxi 1': {'location': (0, 1), 'fuel': 0}, 'taxi 2': {'location': (2, 0), 'fuel': 0}}, 'passengers': {'Dana': {'location': 'taxi 2', 'destination': (2, 2), 'possible_goals': ((2, 2),), 'prob_change_goal': 0.1}, 'Dan': {'location': 'taxi 2', 'destination': (2, 2), 'possible_goals': ((2, 2),), 'prob_change_goal': 0.1}}}
+print(hash(json.dumps(y)))

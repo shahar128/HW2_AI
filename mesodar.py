@@ -7,19 +7,16 @@ import json
 def my_product(inp):
     return (list(zip(inp.keys(), values)) for values in product(*inp.values()))
 
+PYTHONHASHSEED = 8
 
-initial =  {
-        "optimal": False,
-        "map": [['P', 'P', 'G'],
-                ['P', 'P', 'P'],
-                ['G', 'P', 'P']],
-        "taxis": {'taxi 1': {"location": (0, 0), "fuel": 3, "capacity": 1},
-                  'taxi 2': {"location": (0, 0), "fuel": 3, "capacity": 1}},
-        "passengers": {'Dana': {"location": (0, 2), "destination": (2, 2),
-                                "possible_goals": ((2, 2),(1,2)), "prob_change_goal": 0.1},
-                       'Dan': {"location": (2, 0), "destination": (2, 2),
-                               "possible_goals": ((2, 2),(0,0)), "prob_change_goal": 0.1}
-                       },
+initial =      {
+        "optimal": True,
+        "map": [['P', 'P', 'P'],
+                ['P', 'G', 'P'],
+                ['P', 'P', 'P']],
+        "taxis": {'taxi 1': {"location": (0, 0), "fuel": 10, "capacity": 1}},
+        "passengers": {'Dana': {"location": (2, 2), "destination": (0, 0),
+                                "possible_goals": ((0, 0), (2, 2)), "prob_change_goal": 0.1}},
         "turns to go": 100
     }
 # for 1 taxi and 1 passenger:
@@ -34,7 +31,6 @@ for i in range(len_row):
     for j in range(len_col):
         if map[i][j] == 'P' or map[i][j] == 'G':
             possible_tiles.add((i, j))
-
 
 # 2. name of taxis and 3. fuel
 taxis = {}
@@ -74,7 +70,7 @@ for item in taxis_locations:
 for item in to_remove:
     taxis_locations.remove(item)
 
-taxi_combined = list(itertools.product(taxis_locations,fuel_product))
+taxi_combined = list(itertools.product(taxis_locations, fuel_product))
 
 loc_dest_dict = {}
 dests = {}
@@ -125,13 +121,11 @@ for taxi_state in taxi_combined:
             pass_dest = item[1]['dest']
             pass_goals = initial["passengers"][pass_name]["possible_goals"]
             pass_change = initial["passengers"][pass_name]["prob_change_goal"]
-            passengers_dict[pass_name] = {"location": pass_loc,"destination": pass_dest,
-                                          "possible_goals": pass_goals,"prob_change_goal": pass_change}
+            passengers_dict[pass_name] = {"location": pass_loc, "destination": pass_dest,
+                                          "possible_goals": pass_goals, "prob_change_goal": pass_change}
         temp_state = {"taxis": taxis_dict, "passengers": passengers_dict}
         hash_val = hash(json.dumps(temp_state))
-        hash_val = str(hash_val)
         states_dict[hash_val] = {"state": temp_state, "action": None, "value": 0}
-
 
 
 def possible_moves(loc, lenrow, lencol):
@@ -161,6 +155,7 @@ def possible_moves(loc, lenrow, lencol):
         return [(i - 1, j), (i, 1), (i + 1, j)]
     elif j == lencol:
         return [(i - 1, j), (i, j - 1), (i + 1, j)]
+
 
 def actions(state, initial):
     """Returns all the actions that can be executed in the given
@@ -236,7 +231,8 @@ def actions(state, initial):
         final_prod_actions.append(reset)
         return tuple(final_prod_actions)
 
-def result(initial,state, action):
+
+def result(initial, state, action):
     """Return the states and possibilities that results from executing the given
     action in the given state."""
     # state = json.loads(state)
@@ -275,10 +271,12 @@ def result(initial,state, action):
             new_initial = copy.deepcopy(initial)
             del new_initial["optimal"]
             del new_initial["map"]
+            del new_initial["turn to go"]
             for taxi in new_initial["taxis"].keys():
                 del new_initial["taxis"][taxi]["capacity"]
                 return new_initial
     return new_state
+
 
 def turn_to_stoch(state, dests):
     stoch_states = {}
@@ -291,30 +289,79 @@ def turn_to_stoch(state, dests):
             curr_dest = state["state"]["passengers"][pass_name]["destination"]
             prob_change = state["state"]["passengers"][pass_name]["prob_change_goal"]
             if pass_dest == curr_dest:
-                prob *= (1 - prob_change) + (prob_change/len(state["state"]["passengers"][pass_name]["possible_goals"]))
+                prob *= (1 - prob_change) + (
+                            prob_change / len(state["state"]["passengers"][pass_name]["possible_goals"]))
             else:
                 new_state["state"]["passengers"][pass_name]["destination"] = pass_dest
-                prob *= (prob_change/len(state["state"]["passengers"][pass_name]["possible_goals"]))
-        prob = round(prob,6)
+                prob *= (prob_change / len(state["state"]["passengers"][pass_name]["possible_goals"]))
+        prob = round(prob, 6)
         hash_val = hash(json.dumps(new_state["state"]))
+        # if hash_val == -8366790848761051619:
+        #     print(new_state["state"])
+        # print(new_state["state"])
         stoch_states[hash_val] = prob
-    return  stoch_states
-
-x = {'state': {'taxis': {'taxi 1': {'location': (0, 1), 'fuel': 1},
-                         'taxi 2': {'location': (1, 2), 'fuel': 1}},
-               'passengers': {'Dana': {'location': (2, 2), 'destination': (2, 2),
-                                       'possible_goals': ((2, 2),), 'prob_change_goal': 0.1},
-                              'Dan': {'location': (2, 2), 'destination': (2, 2), 'possible_goals': ((2, 2),), 'prob_change_goal': 0.1}}}, 'action': None, 'value': 0}
-
-y = [[('Dana', (2, 2)), ('Dan', (2, 2))]]
-
-print(turn_to_stoch(x,y))
+    return stoch_states
 
 
+def value_iteration(states_dict, initial, dests_combined):
+    ##initialize
+    for hash_state in states_dict.keys():
+        value = 0
+        state = states_dict[hash_state]
+        for passenger in state["state"]["passengers"].keys():
+            pass_loc = state["state"]["passengers"][passenger]["location"]
+            pass_dest = state["state"]["passengers"][passenger]["destination"]
+            if pass_loc == pass_dest:
+                value += 100
+        for taxi in state["state"]["taxis"].keys():
+            taxi_loc = state["state"]["taxis"][taxi]["location"]
+            tile_type = initial["map"][taxi_loc[0]][taxi_loc[1]]
+            init_fuel = initial["taxis"][taxi]["fuel"]
+            curr_fuel = state["state"]["taxis"][taxi]["fuel"]
+            if init_fuel == curr_fuel and tile_type == 'G':
+                value -= 10
+        new_initial = copy.deepcopy(initial)
+        del new_initial["optimal"]
+        del new_initial["map"]
+        del new_initial["turns to go"]
+        for taxi in new_initial["taxis"].keys():
+            del new_initial["taxis"][taxi]["capacity"]
+        hash_val = json.dumps(new_initial)
+        if hash_state == hash_val:
+            value -= 50
+        states_dict[hash_state]["value"] = value
 
 
-#
-# key = list(states_dict.keys())[100]
-# print(states_dict[key])
-# print("00000000")
-# print(actions(states_dict[key], initial))
+    # rounds
+    max_iter = 10  # Maximum number of iterations
+    delta = 0.01 # Error tolerance
+
+    for i in range(max_iter):
+        for hash_value in states_dict.keys():
+            # print(states_dict[hash_value]["state"])
+            # print(hash_value)
+            # print("000")
+            state = states_dict[hash_value]
+            actions_tup = actions(state, initial)
+            max_val = float('-inf')
+            for act in actions_tup:
+                sigma = 0
+                res = result(initial, state, act)
+                stoch_res = turn_to_stoch(res, dests_combined)
+
+                for s_res in stoch_res:
+                    V = states_dict[s_res]["value"]
+                    P = stoch_res[s_res]
+                    sigma += V*P
+                if sigma > max_val:
+                    states_dict[hash_value]["action"] = act
+                max_val = max(max_val, sigma)
+            # MAYBE += IN HERE
+            # צריך להוסיף את הריוורד של המצב עצמו - R(s)
+
+            states_dict[hash_value]["value"] = max_val
+    return states_dict
+
+d = value_iteration(states_dict,initial,dests_combined)
+print(d)
+
