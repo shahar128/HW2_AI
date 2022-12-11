@@ -197,10 +197,14 @@ class TaxiStochasticProblem:
             self.state['passengers'][passenger_name]['location'] = self.state['taxis'][taxi_name]['location']
             self.state['taxis'][taxi_name]['capacity'] += 1
             self.score += DROP_IN_DESTINATION_REWARD
+            print('reward:',self.score)
+            print("what happend",+DROP_IN_DESTINATION_REWARD)
             return
         elif atomic_action[0] == 'refuel':
             self.state['taxis'][taxi_name]['fuel'] = self.initial_state['taxis'][taxi_name]['fuel']
             self.score -= REFUEL_PENALTY
+            print('reward:',self.score)
+            print("what happend", -REFUEL_PENALTY)
             return
         elif atomic_action[0] == 'wait':
             return
@@ -227,6 +231,8 @@ class TaxiStochasticProblem:
         self.state["passengers"] = self.initial_state["passengers"]
         self.state["turns to go"] -= 1
         self.score -= RESET_PENALTY
+        print('reward:',self.score)
+        print("what happend", -RESET_PENALTY)
         return
 
     def terminate_execution(self):
@@ -242,7 +248,8 @@ class TaxiStochasticProblem:
         build the graph of the problem
         """
         n, m = len(self.initial_state['map']), len(self.initial_state['map'][0])
-        g = nx.grid_graph((m, n))
+        # g = nx.grid_graph((m, n))
+        g = nx.grid_graph(dim = [3,3])
         nodes_to_remove = []
         for node in g:
             if self.initial_state['map'][node[0]][node[1]] == 'I':

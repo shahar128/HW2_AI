@@ -7,9 +7,8 @@ import json
 def my_product(inp):
     return (list(zip(inp.keys(), values)) for values in product(*inp.values()))
 
-PYTHONHASHSEED = 8
 
-initial =      {
+initial = {
         "optimal": True,
         "map": [['P', 'P', 'P'],
                 ['P', 'G', 'P'],
@@ -56,7 +55,6 @@ for passenger in initial['passengers'].keys():
     pass_position[passenger] = {'possible_locations': set_location, "possible_dest": possible_goals}
     pass_taxi[passenger] = taxis_list
 
-# maybe
 
 fuel_product = list(my_product(taxis))
 taxis_locations = list(my_product(taxis_tiles))
@@ -101,7 +99,7 @@ for taxi in initial["taxis"].keys():
 
 for item in to_remove:
     passengers_combined.remove(item)
-
+# print(passengers_combined)
 states_dict = {}
 for taxi_state in taxi_combined:
     for pass_state in passengers_combined:
@@ -109,7 +107,9 @@ for taxi_state in taxi_combined:
         for taxis_loc in taxi_state[0]:
             taxi_name = taxis_loc[0]
             taxi_loc = taxis_loc[1]
-            taxis_dict[taxi_name] = {"location": taxi_loc, "fuel": 0}
+            ###
+            capacity = initial["taxis"][taxi_name]["capacity"]
+            taxis_dict[taxi_name] = {"location": taxi_loc, "fuel": 0, "capacity": capacity, "currCap": 0}
         for taxis_fuel in taxi_state[1]:
             taxi_name = taxis_fuel[0]
             taxi_fuel = taxis_fuel[1]
@@ -118,14 +118,19 @@ for taxi_state in taxi_combined:
         for item in pass_state:
             pass_name = item[0]
             pass_loc = item[1]['loc']
+            ###
+            if type(pass_loc) == str:
+                taxis_dict[pass_loc]["currCap"] += 1
+
             pass_dest = item[1]['dest']
             pass_goals = initial["passengers"][pass_name]["possible_goals"]
             pass_change = initial["passengers"][pass_name]["prob_change_goal"]
             passengers_dict[pass_name] = {"location": pass_loc, "destination": pass_dest,
                                           "possible_goals": pass_goals, "prob_change_goal": pass_change}
+
         temp_state = {"taxis": taxis_dict, "passengers": passengers_dict}
         hash_val = hash(json.dumps(temp_state))
-        states_dict[hash_val] = {"state": temp_state, "action": None, "value": 0}
+        states_dict[hash_val] = {"state": temp_state, "action": None, "value": 0, "reward": 0}
 
 
 def possible_moves(loc, lenrow, lencol):
@@ -176,15 +181,15 @@ def actions(state, initial):
                 actions_dict[key].append(to_add)
 
         ## pickup and drop off
-        # taxi_capacity = initial['taxis'][key]['capacity']
-        # taxi_curr_capacity = state['taxis'][key]['currCap']
+        taxi_capacity = state["state"]['taxis'][key]['capacity']
+        taxi_curr_capacity = state["state"]['taxis'][key]['currCap']
         taxi_list = list(state["state"]["taxis"].keys())
 
         for person in state["state"]["passengers"].keys():
             person_location = state["state"]["passengers"][person]["location"]
             person_dest = state["state"]["passengers"][person]["destination"]
             # person_on_taxi = state["passengers"][person]["onTaxi"]
-            if person_location == t_location and person_location not in taxi_list:
+            if person_location == t_location and person_location not in taxi_list and taxi_curr_capacity + 1 <= taxi_capacity:
                 to_add = ('pick up', key, person)
                 actions_dict[key].append(to_add)
             if person_location == key and person_dest == t_location:
@@ -254,11 +259,13 @@ def result(initial, state, action):
         elif verb == 'pick up':
             taxi_name = act[1]
             passenger = act[2]
+            new_state["state"]["taxis"][taxi_name]["currCap"] += 1
             new_state["state"]["passengers"][passenger]["location"] = taxi_name
 
         elif verb == 'drop off':
             taxi_name = act[1]
             passenger = act[2]
+            new_state["state"]["taxis"][taxi_name]["currCap"] -= 1
             new_state["state"]["passengers"][passenger]["location"] = new_state["state"]["taxis"][taxi_name]["location"]
 
         elif verb == 'refuel':
@@ -273,8 +280,8 @@ def result(initial, state, action):
             del new_initial["map"]
             del new_initial["turn to go"]
             for taxi in new_initial["taxis"].keys():
-                del new_initial["taxis"][taxi]["capacity"]
-                return new_initial
+                new_initial["taxis"][taxi]["currCap"] = 0
+            return new_initial
     return new_state
 
 
@@ -296,7 +303,7 @@ def turn_to_stoch(state, dests):
                 prob *= (prob_change / len(state["state"]["passengers"][pass_name]["possible_goals"]))
         prob = round(prob, 6)
         hash_val = hash(json.dumps(new_state["state"]))
-        # if hash_val == -8366790848761051619:
+        # if hash_val == -5498638515100718297:
         #     print(new_state["state"])
         # print(new_state["state"])
         stoch_states[hash_val] = prob
@@ -325,18 +332,19 @@ def value_iteration(states_dict, initial, dests_combined):
         del new_initial["map"]
         del new_initial["turns to go"]
         for taxi in new_initial["taxis"].keys():
-            del new_initial["taxis"][taxi]["capacity"]
+            new_initial["taxis"][taxi]["currCap"] = 0
         hash_val = json.dumps(new_initial)
         if hash_state == hash_val:
             value -= 50
+        states_dict[hash_state]["reward"] = value
         states_dict[hash_state]["value"] = value
 
-
     # rounds
-    max_iter = 10  # Maximum number of iterations
-    delta = 0.01 # Error tolerance
+    max_iter = 101  # Maximum number of iterations
+    epsilon = 0.01 # Error tolerance
 
     for i in range(max_iter):
+
         for hash_value in states_dict.keys():
             # print(states_dict[hash_value]["state"])
             # print(hash_value)
@@ -348,7 +356,6 @@ def value_iteration(states_dict, initial, dests_combined):
                 sigma = 0
                 res = result(initial, state, act)
                 stoch_res = turn_to_stoch(res, dests_combined)
-
                 for s_res in stoch_res:
                     V = states_dict[s_res]["value"]
                     P = stoch_res[s_res]
@@ -356,10 +363,12 @@ def value_iteration(states_dict, initial, dests_combined):
                 if sigma > max_val:
                     states_dict[hash_value]["action"] = act
                 max_val = max(max_val, sigma)
-            # MAYBE += IN HERE
-            # צריך להוסיף את הריוורד של המצב עצמו - R(s)
-
-            states_dict[hash_value]["value"] = max_val
+            reward = states_dict[hash_value]["reward"]
+            pre_val = states_dict[hash_value]["value"]
+            new_val = max_val + reward
+            if abs(pre_val - new_val) < epsilon:
+                pass
+            states_dict[hash_value]["value"] = max_val + reward
     return states_dict
 
 d = value_iteration(states_dict,initial,dests_combined)
