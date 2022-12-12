@@ -2,13 +2,14 @@ import random
 import networkx as nx
 
 from ex2 import TaxiAgent, ids, OptimalTaxiAgent
+# from additional_inputs import additional_inputs
 from inputs import small_inputs
 import logging
 import time
 from copy import deepcopy
 
 RESET_PENALTY = 50
-REFUEL_PENALTY = 50
+REFUEL_PENALTY = 10
 DROP_IN_DESTINATION_REWARD = 100
 INIT_TIME_LIMIT = 300
 TURN_TIME_LIMIT = 0.1
@@ -68,6 +69,7 @@ class TaxiStochasticProblem:
         """
         check if the action is legal
         """
+
         def _is_move_action_legal(move_action):
             taxi_name = move_action[1]
             if taxi_name not in self.state['taxis'].keys():
@@ -135,27 +137,40 @@ class TaxiStochasticProblem:
             return False
         for atomic_action in action:
             # illegal move action
-            if atomic_action[0] == 'move' and not _is_move_action_legal(atomic_action):
-                logging.error(f"Move action {atomic_action} is illegal!")
-                return False
+            if atomic_action[0] == 'move':
+                if not _is_move_action_legal(atomic_action):
+                    logging.error(f"Move action {atomic_action} is illegal!")
+                    return False
             # illegal pick action
-            elif atomic_action[0] == 'pick up' and not _is_pick_up_action_legal(atomic_action):
-                logging.error(f"Pick action {atomic_action} is illegal!")
-                return False
+            elif atomic_action[0] == 'pick up':
+                if not _is_pick_up_action_legal(atomic_action):
+                    logging.error(f"Pick action {atomic_action} is illegal!")
+                    return False
             # illegal drop action
-            elif atomic_action[0] == 'drop off' and not _is_drop_action_legal(atomic_action):
-                logging.error(f"Drop action {atomic_action} is illegal!")
-                return False
+            elif atomic_action[0] == 'drop off':
+                if not _is_drop_action_legal(atomic_action):
+                    logging.error(f"Drop action {atomic_action} is illegal!")
+                    return False
             # illegal refuel action
-            elif atomic_action[0] == 'refuel' and not _is_refuel_action_legal(atomic_action):
-                logging.error(f"Refuel action {atomic_action} is illegal!")
+            elif atomic_action[0] == 'refuel':
+                if not _is_refuel_action_legal(atomic_action):
+                    logging.error(f"Refuel action {atomic_action} is illegal!")
+                    return False
+            elif atomic_action[0] != 'wait':
                 return False
-            elif atomic_action[0] == 'wait':
-                return True
         # check mutex action
         if _is_action_mutex(action):
             logging.error(f"Actions {action} are mutex!")
             return False
+        # check taxis collision
+        if len(self.state['taxis']) > 1:
+            taxis_location_dict = dict([(t, self.state['taxis'][t]['location']) for t in self.state['taxis'].keys()])
+            move_actions = [a for a in action if a[0] == 'move']
+            for move_action in move_actions:
+                taxis_location_dict[move_action[1]] = move_action[2]
+            if len(set(taxis_location_dict.values())) != len(taxis_location_dict):
+                logging.error(f"Actions {action} cause collision!")
+                return False
         return True
 
     def result(self, action):
@@ -197,14 +212,12 @@ class TaxiStochasticProblem:
             self.state['passengers'][passenger_name]['location'] = self.state['taxis'][taxi_name]['location']
             self.state['taxis'][taxi_name]['capacity'] += 1
             self.score += DROP_IN_DESTINATION_REWARD
-            print('reward:',self.score)
-            print("what happend",+DROP_IN_DESTINATION_REWARD)
+            print(self.score)
             return
         elif atomic_action[0] == 'refuel':
             self.state['taxis'][taxi_name]['fuel'] = self.initial_state['taxis'][taxi_name]['fuel']
             self.score -= REFUEL_PENALTY
-            print('reward:',self.score)
-            print("what happend", -REFUEL_PENALTY)
+            print(self.score)
             return
         elif atomic_action[0] == 'wait':
             return
@@ -227,12 +240,10 @@ class TaxiStochasticProblem:
         """
         reset the state of the environment
         """
-        self.state["taxis"] = self.initial_state["taxis"]
-        self.state["passengers"] = self.initial_state["passengers"]
+        self.state["taxis"] = deepcopy(self.initial_state["taxis"])
+        self.state["passengers"] = deepcopy(self.initial_state["passengers"])
         self.state["turns to go"] -= 1
         self.score -= RESET_PENALTY
-        print('reward:',self.score)
-        print("what happend", -RESET_PENALTY)
         return
 
     def terminate_execution(self):
@@ -249,7 +260,7 @@ class TaxiStochasticProblem:
         """
         n, m = len(self.initial_state['map']), len(self.initial_state['map'][0])
         # g = nx.grid_graph((m, n))
-        g = nx.grid_graph(dim = [3,3])
+        g = nx.grid_graph(dim=[m, n])
         nodes_to_remove = []
         for node in g:
             if self.initial_state['map'][node[0]][node[1]] == 'I':
@@ -257,6 +268,7 @@ class TaxiStochasticProblem:
         for node in nodes_to_remove:
             g.remove_node(node)
         return g
+
 
 def main():
     """
@@ -269,6 +281,12 @@ def main():
             my_problem.run_round()
         except EndOfGame:
             continue
+    # for an_input in additional_inputs:
+    #     try:
+    #         my_problem = TaxiStochasticProblem(an_input)
+    #         my_problem.run_round()
+    #     except EndOfGame:
+    #         continue
 
 
 if __name__ == '__main__':

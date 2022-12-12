@@ -23,7 +23,7 @@ small_inputs = [
     # },
     # # 3x3 2 taxi, 2 passengers w/ 1 possible goals, low fuel
     # {
-    #     "optimal": False,
+    #     "optimal": True,
     #     "map": [['P', 'P', 'G'],
     #             ['P', 'P', 'P'],
     #             ['G', 'P', 'P']],
@@ -32,7 +32,7 @@ small_inputs = [
     #     "passengers": {'Dana': {"location": (0, 2), "destination": (2, 2),
     #                             "possible_goals": ((2, 2),), "prob_change_goal": 0.1},
     #                    'Dan': {"location": (2, 0), "destination": (2, 2),
-    #                            "possible_goals": ((2, 2),), "prob_change_goal": 0.1}
+    #                            "possible_goals": ((2, 2),(0,0)), "prob_change_goal": 0.1}
     #                    },
     #     "turns to go": 100
     # },
