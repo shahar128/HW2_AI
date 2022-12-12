@@ -7,7 +7,7 @@ from inputs import small_inputs
 import logging
 import time
 from copy import deepcopy
-
+random.seed(10)
 RESET_PENALTY = 50
 REFUEL_PENALTY = 10
 DROP_IN_DESTINATION_REWARD = 100
@@ -189,6 +189,7 @@ class TaxiStochasticProblem:
             self.reset_environment()
             return
         if action == "terminate":
+            print("ofer")
             self.terminate_execution()
         for atomic_action in action:
             self.apply_atomic_action(atomic_action)

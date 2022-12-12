@@ -76,8 +76,40 @@
 # print("000")
 # # y = {"dana": [{"loc": "taxi 1", "dest": (0,1)}, {"loc": (1,2), "dest": (0,1)}], "ofer": ["taxi 1", "taxi 2", None] }
 # print(list(my_product(f)))
-import json
+# import json
+#
+# x = -8366790848761051619
+# y = {'taxis': {'taxi 1': {'location': (0, 1), 'fuel': 0}, 'taxi 2': {'location': (2, 0), 'fuel': 0}}, 'passengers': {'Dana': {'location': 'taxi 2', 'destination': (2, 2), 'possible_goals': ((2, 2),), 'prob_change_goal': 0.1}, 'Dan': {'location': 'taxi 2', 'destination': (2, 2), 'possible_goals': ((2, 2),), 'prob_change_goal': 0.1}}}
+# print(hash(json.dumps(y)))
+def possible_moves(loc, lenrow, lencol):
+    # returns possible moves given locations and map size
+    lenrow -= 1
+    lencol -= 1
+    i = loc[0]
+    j = loc[1]
+    if i != 0 and i != lenrow and j != 0 and j != lencol:
+        return [(i - 1, j), (i + 1, j), (i, j - 1), (i, j + 1)]
+    if i == 0:
+        if j == 0:
+            if lenrow > 0:
+                re
+            return [(0, 1), (1, 0)]
+        elif j == lencol:
+            return [(1, j), (0, j - 1)]
+        else:
+            return [(0, j + 1), (0, j - 1), (1, j)]
+    elif i == lenrow:
+        if j == 0:
+            return [(i - 1, 0), (i, 1)]
+        elif j == lencol:
+            return [(i - 1, j), (i, j - 1)]
+        else:
+            return [(i, j + 1), (i, j - 1), (i - 1, j)]
+    if j == 0:
+        return [(i - 1, j), (i, 1), (i + 1, j)]
+    elif j == lencol:
+        return [(i - 1, j), (i, j - 1), (i + 1, j)]
 
-x = -8366790848761051619
-y = {'taxis': {'taxi 1': {'location': (0, 1), 'fuel': 0}, 'taxi 2': {'location': (2, 0), 'fuel': 0}}, 'passengers': {'Dana': {'location': 'taxi 2', 'destination': (2, 2), 'possible_goals': ((2, 2),), 'prob_change_goal': 0.1}, 'Dan': {'location': 'taxi 2', 'destination': (2, 2), 'possible_goals': ((2, 2),), 'prob_change_goal': 0.1}}}
-print(hash(json.dumps(y)))
+
+x = [['P', 'P', 'G', 'P', 'P'], ]
+print(possible_moves((0,3), 1,5))
