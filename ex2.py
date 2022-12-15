@@ -2,37 +2,35 @@ import itertools
 from itertools import product
 import json
 import copy
-
+import utils
 def my_product(inp):
     return (list(zip(inp.keys(), values)) for values in product(*inp.values()))
 
-def possible_moves(loc, lenrow, lencol):
-    # returns possible moves given locations and map size
-    lenrow -= 1
-    lencol -= 1
-    i = loc[0]
-    j = loc[1]
-    if i != 0 and i != lenrow and j != 0 and j != lencol:
-        return [(i - 1, j), (i + 1, j), (i, j - 1), (i, j + 1)]
-    if i == 0:
-        if j == 0:
-            return [(0, 1), (1, 0)]
-        elif j == lencol:
-            return [(1, j), (0, j - 1)]
-        else:
-            return [(0, j + 1), (0, j - 1), (1, j)]
-    elif i == lenrow:
-        if j == 0:
-            return [(i - 1, 0), (i, 1)]
-        elif j == lencol:
-            return [(i - 1, j), (i, j - 1)]
-        else:
-            return [(i, j + 1), (i, j - 1), (i - 1, j)]
+def possible_moves(location, matrix_size):
+    # Unpack the location tuple
+    row, col = location
 
-    if j == 0:
-        return [(i - 1, j), (i, 1), (i + 1, j)]
-    elif j == lencol:
-        return [(i - 1, j), (i, j - 1), (i + 1, j)]
+    # Initialize a list of possible moves
+    moves = []
+
+    # Check if we can move up
+    if row > 0:
+        moves.append((row - 1, col))
+
+    # Check if we can move down
+    if row < matrix_size[0] - 1:
+        moves.append((row + 1, col))
+
+    # Check if we can move left
+    if col > 0:
+        moves.append((row, col - 1))
+
+    # Check if we can move right
+    if col < matrix_size[1] - 1:
+        moves.append((row, col + 1))
+
+    # Return the list of possible moves
+    return moves
 
 
 def actions(state, initial):
@@ -46,9 +44,8 @@ def actions(state, initial):
         actions_dict[key] = []
         ## possible moves
         t_location = state["state"]["taxis"][key]["location"]
-        moves = possible_moves(t_location, lenrow, lencol)
+        moves = possible_moves(t_location, (lenrow, lencol))
         for move in moves:
-            print(move)
             tile_type = initial["map"][move[0]][move[1]]
             if tile_type != 'I' and state["state"]["taxis"][key]['fuel'] > 0:
                 to_add = ('move', key, move)
@@ -253,7 +250,7 @@ def value_iteration(states_dict, initial, dests_combined):
                     elif act[0] == "drop off":
                         reward += 100
                     elif act[0] == "wait":
-                        reward -= 100
+                        reward -= 0
                     if sigma + reward >= max_val:
                         states_dict[hash_value]["action"] = act
                         states_dict[hash_value]["value"] = sigma + reward
@@ -269,20 +266,21 @@ def value_iteration(states_dict, initial, dests_combined):
                         P = stoch_res[s_res]
                         sigma += V*P
                     for taxi_act in act:
-                        if act == "reset":
+                        if taxi_act == "reset":
                             reward -= 50
-                        elif act == "terminate":
+                        elif taxi_act == "terminate":
                             reward -= 10000
-                        elif act[0] == "refuel":
+                        elif taxi_act[0] == "refuel":
                             reward -= 10
-                        elif act[0] == "drop off":
+                        elif taxi_act[0] == "drop off":
                             reward += 100
-                        elif act[0] == "wait":
+                        elif taxi_act[0] == "wait":
                             reward -= 100
                     if sigma + reward >= max_val:
                         states_dict[hash_value]["action"] = act
                         states_dict[hash_value]["value"] = sigma + reward
                     max_val = max(max_val, sigma + reward)
+    # print(states_dict)
 
     return states_dict
 
@@ -400,7 +398,6 @@ class OptimalTaxiAgent:
                 temp_state = {"taxis": taxis_dict, "passengers": passengers_dict}
                 hash_val = hash(json.dumps(temp_state))
                 self.states_dict[hash_val] = {"state": temp_state, "action": None, "value": 0, "reward": 0}
-        # print(self.states_dict)
         self.states_dict = value_iteration(self.states_dict, self.initial, dests_combined)
 
 
@@ -418,19 +415,19 @@ class OptimalTaxiAgent:
 
         hash_val = hash(json.dumps((new_state)))
         action = self.states_dict[hash_val]["action"]
-        print(state)
+        print(action)
         if len(state["taxis"].keys()) == 1:
             if action == ('reset',):
-                print((action))
+                # print((action))
                 return 'reset'
             elif action == ('terminate',):
                 return 'terminate'
             else:
                 # print(state)
-                print(action)
+                # print(action)
                 # print(state)
                 return ((action,))
-        print(action)
+        # print(action)
         # print(state)
         return action
 
@@ -439,6 +436,108 @@ class OptimalTaxiAgent:
 class TaxiAgent:
     def __init__(self, initial):
         self.initial = initial
+        self.states_dict = {}
+        self.Queue = utils.FIFOQueue()
+        self.new_initial = copy.deepcopy(self.initial)
+        del self.new_initial["optimal"]
+        del self.new_initial["map"]
+        del self.new_initial["turns to go"]
+        self.new_initial = {"state": self.new_initial, "probability": None, "action": None, "value": float("-inf")}
+        self.Queue.append(self.new_initial)
+        while len(self.Queue) != 0:
+            node = self.Queue.pop()
+            hashed_val = hash(json.dumps(node["state"]))
+            if hashed_val not in self.states_dict.keys():
+                self.ChooseAction(node, 3)
+                hash_val = hash(json.dumps(node["state"]))
+                self.states_dict[hash_val] = node
+                act = node["action"]
+                res = result(self.initial, node, act)
+                dests = self.calculateDests(self.initial)
+                stoch_states = self.stochStates(res, dests)
+                for hash_val in stoch_states.keys():
+                    self.Queue.append(stoch_states[hash_val])
+
+    def stochStates(self, state, dests):
+        # del state["optimal"]
+        # del state["map"]
+        # del state["turns to go"]
+        stoch_states = {}
+        for dest in dests:
+            new_state = copy.deepcopy(state)
+            prob = 1
+            for item in dest:
+                pass_name = item[0]
+                pass_dest = item[1]
+                curr_dest = state["passengers"][pass_name]["destination"]
+                prob_change = state["passengers"][pass_name]["prob_change_goal"]
+                if pass_dest == curr_dest:
+                    prob *= (1 - prob_change) + (
+                            prob_change / len(state["passengers"][pass_name]["possible_goals"]))
+                else:
+                    new_state["passengers"][pass_name]["destination"] = pass_dest
+                    prob *= (prob_change / len(state["passengers"][pass_name]["possible_goals"]))
+            prob = round(prob, 6)
+            hash_val = hash(json.dumps(new_state))
+            stoch_states[hash_val] = {"state": new_state, "probability": prob, "action": 0, "value": float("-inf")}
+        return stoch_states
+
+    def calculateDests(self, initial):
+        dests = {}
+        for passenger in initial["passengers"].keys():
+            dests[passenger] = list(initial["passengers"][passenger]['possible_goals'])
+        dests_combined = list(my_product(dests))
+        return dests_combined
+
+    def calculate_h(self, state, action):
+        reward = 0
+        if action == "reset":
+            reward -= 50
+        elif action == "pick up":
+            reward += 10000
+        elif action[0] == "refuel":
+            reward -= 10
+        elif action[0] == "drop off":
+            reward += 100
+        elif action[0] == "wait":
+            reward -= 100
+        return reward
+
+    def ChooseAction(self,root_state, i, action = None):
+        if i == 0:
+            value = self.calculate_h(root_state, action)
+            root_state["value"] = value
+            return
+        action = actions(root_state, self.initial)
+        dests = self.calculateDests(self.initial)
+        for act in action:
+            res = result(self.initial, root_state, act)
+            stoch_states = self.stochStates(res, dests)
+            val =0
+            for hash_val in stoch_states.keys():
+                self.ChooseAction(stoch_states[hash_val], i - 1, act)
+                prob = stoch_states[hash_val]["probability"]
+                value = stoch_states[hash_val]["value"]
+                val += value*prob
+            if val > root_state["value"]:
+                root_state["value"] = val
+                root_state["action"] = act
+
 
     def act(self, state):
-        raise NotImplemented
+        new_state = copy.deepcopy(state)
+        del new_state["optimal"]
+        del new_state["map"]
+        del new_state["turns to go"]
+        hash_val = hash(json.dumps((new_state)))
+        action = self.states_dict[hash_val]["action"]
+        if len(state["taxis"].keys()) == 1:
+            if action == ('reset',):
+                return 'reset'
+            elif action == ('terminate',):
+                return 'terminate'
+            else:
+                return ((action,))
+        return action
+
+
