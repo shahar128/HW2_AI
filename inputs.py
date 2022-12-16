@@ -1,18 +1,36 @@
 small_inputs = [
     # 3x3 1 taxi, 1 passenger w/ 2 possible goals, plenty of fuel
     {
-        'optimal': False,
-        "turns to go": 50,
-        'map': [['P', 'P', 'P', 'P', 'P'],
-                ['P', 'I', 'P', 'G', 'P'],
-                ['P', 'P', 'I', 'P', 'P'],
-                ['P', 'P', 'P', 'I', 'P']],
-        'taxis': {'taxi 1': {'location': (2, 4), 'fuel': 10, 'capacity': 3}},
-        'passengers': {'Michael': {'location': (3, 4), 'destination': (2, 1),
-                                   "possible_goals": ((2, 1), (3, 4)), "prob_change_goal": 0.1},
-                       'Freyja': {'location': (0, 0), 'destination': (2, 1),
-                                  "possible_goals": ((2, 1), (0, 0)), "prob_change_goal": 0.3}}
-    }
+        "optimal": False,
+        "map": [['P', 'P', 'P'],
+                ['P', 'G', 'P'],
+                ['P', 'P', 'P']],
+        "taxis": {'taxi 1': {"location": (0, 0), "fuel": 10, "capacity": 1}},
+        "passengers": {'Dana': {"location": (2, 2), "destination": (0, 0),
+                                "possible_goals": ((0, 0), (2, 2)), "prob_change_goal": 0.1}},
+        "turns to go": 100
+    },
+# {
+#         "optimal": True,
+#         "map": [['P', 'P', 'P'],
+#                 ['P', 'G', 'P'],
+#                 ['P', 'P', 'P']],
+#         "taxis": {'taxi 1': {"location": (0, 0), "fuel": 10, "capacity": 1}},
+#         "passengers": {'Dana': {"location": (2, 2), "destination": (0, 0),
+#                                 "possible_goals": ((0, 0), (2, 2)), "prob_change_goal": 0.1}},
+#         "turns to go": 100
+#     }
+#     {
+#         'optimal': False,
+#         "turns to go": 50,
+#         'map': [['P', 'P', 'P', 'P', 'P'],
+#                 ['P', 'I', 'P', 'G', 'P'],
+#                 ['P', 'P', 'I', 'P', 'P'],
+#                 ['P', 'P', 'P', 'I', 'P']],
+#         'taxis': {'taxi 1': {'location': (2, 4), 'fuel': 10, 'capacity': 3}},
+#         'passengers': {'Michael': {'location': (3, 4), 'destination': (2, 1),
+#                                    "possible_goals": ((2, 1), (3, 4)), "prob_change_goal": 0.1}}
+#     },
     # {
     #     'optimal': True,
     #     "turns to go": 100,

@@ -330,71 +330,83 @@ initial =      {
                                  'possible_goals': ((2, 3), (2, 2), (4, 3)), 'prob_change_goal': 0.3}},
     }
 # print(calculateDests(x))
-
-def stochStates(state, dests):
-    stoch_states = {}
-    for dest in dests:
-        new_state = copy.deepcopy(state)
-        prob = 1
-        for item in dest:
-            pass_name = item[0]
-            pass_dest = item[1]
-            curr_dest = state["passengers"][pass_name]["destination"]
-            prob_change = state["passengers"][pass_name]["prob_change_goal"]
-            if pass_dest == curr_dest:
-                prob *= (1 - prob_change) + (
-                        prob_change / len(state["passengers"][pass_name]["possible_goals"]))
-            else:
-                new_state["passengers"][pass_name]["destination"] = pass_dest
-                prob *= (prob_change / len(state["passengers"][pass_name]["possible_goals"]))
-        prob = round(prob, 6)
-        hash_val = hash(json.dumps(new_state))
-        stoch_states[hash_val] = {"state": new_state, "probability": prob, "action": None, "value": 0}
-    return stoch_states
-
-def calculate_h(state, action):
-    return 1
-
-def ChooseAction(root_state, i, action=None):
-    if i == 0:
-        value = calculate_h(root_state, action)
-        root_state["value"] = value
-        return
-    action = actions(root_state, initial)
-    dests = calculateDests(initial)
-    for act in action:
-        res = result(initial, root_state, act)
-        stoch_states =stochStates(res, dests)
-        val = 0
-        for hash_val in stoch_states.keys():
-            ChooseAction(stoch_states[hash_val], i - 1, act)
-            prob = stoch_states[hash_val]["probability"]
-            value = stoch_states[hash_val]["value"]
-            val += value * prob
-        if val > root_state["value"]:
-            root_state["value"] = val
-            root_state["action"] = act
-from utils import FIFOQueue
-new_initial = copy.deepcopy(initial)
-del new_initial["optimal"]
-del new_initial["map"]
-del new_initial["turns to go"]
-new_initial = {"state": new_initial, "probability": None, "action": None, "value": 0}
-Queue = FIFOQueue()
-states_dict = {}
-Queue.append(new_initial)
-while len(Queue) != 0:
-    node = Queue.pop()
-    hashed_val = hash(json.dumps(node["state"]))
-    if hashed_val not in states_dict.keys():
-        ChooseAction(node, 2)
-        hash_val = hash(json.dumps(node["state"]))
-        states_dict[hash_val] = node
-        print(len(states_dict.keys()))
-        act = node["action"]
-        res = result(initial, node, act)
-        dests = calculateDests(initial)
-        stoch_states = stochStates(res, dests)
-        for hash_val in stoch_states.keys():
-            Queue.append(stoch_states[hash_val])
-print(len(states_dict.keys()))
+#
+# def stochStates(state, dests):
+#     stoch_states = {}
+#     for dest in dests:
+#         new_state = copy.deepcopy(state)
+#         prob = 1
+#         for item in dest:
+#             pass_name = item[0]
+#             pass_dest = item[1]
+#             curr_dest = state["passengers"][pass_name]["destination"]
+#             prob_change = state["passengers"][pass_name]["prob_change_goal"]
+#             if pass_dest == curr_dest:
+#                 prob *= (1 - prob_change) + (
+#                         prob_change / len(state["passengers"][pass_name]["possible_goals"]))
+#             else:
+#                 new_state["passengers"][pass_name]["destination"] = pass_dest
+#                 prob *= (prob_change / len(state["passengers"][pass_name]["possible_goals"]))
+#         prob = round(prob, 6)
+#         hash_val = hash(json.dumps(new_state))
+#         stoch_states[hash_val] = {"state": new_state, "probability": prob, "action": None, "value": 0}
+#     return stoch_states
+#
+# def calculate_h(state, action):
+#     return 1
+#
+# def ChooseAction(root_state, i, action=None):
+#     if i == 0:
+#         value = calculate_h(root_state, action)
+#         root_state["value"] = value
+#         return
+#     action = actions(root_state, initial)
+#     dests = calculateDests(initial)
+#     for act in action:
+#         res = result(initial, root_state, act)
+#         stoch_states =stochStates(res, dests)
+#         val = 0
+#         for hash_val in stoch_states.keys():
+#             ChooseAction(stoch_states[hash_val], i - 1, act)
+#             prob = stoch_states[hash_val]["probability"]
+#             value = stoch_states[hash_val]["value"]
+#             val += value * prob
+#         if val > root_state["value"]:
+#             root_state["value"] = val
+#             root_state["action"] = act
+# from utils import FIFOQueue
+# new_initial = copy.deepcopy(initial)
+# del new_initial["optimal"]
+# del new_initial["map"]
+# del new_initial["turns to go"]
+# new_initial = {"state": new_initial, "probability": None, "action": None, "value": 0}
+# Queue = FIFOQueue()
+# states_dict = {}
+# Queue.append(new_initial)
+# while len(Queue) != 0:
+#     node = Queue.pop()
+#     hashed_val = hash(json.dumps(node["state"]))
+#     if hashed_val not in states_dict.keys():
+#         ChooseAction(node, 2)
+#         hash_val = hash(json.dumps(node["state"]))
+#         states_dict[hash_val] = node
+#         print(len(states_dict.keys()))
+#         act = node["action"]
+#         res = result(initial, node, act)
+#         dests = calculateDests(initial)
+#         stoch_states = stochStates(res, dests)
+#         for hash_val in stoch_states.keys():
+#             Queue.append(stoch_states[hash_val])
+# print(len(states_dict.keys()))
+map1 = [['P', 'P', 'P', 'I', 'P', 'P', 'P'],
+                ['P', 'I', 'P', 'P', 'P', 'P', 'I'],
+                ['P', 'P', 'I', 'P', 'P', 'I', 'P'],
+                ['P', 'G', 'P', 'I', 'P', 'G', 'P'],
+                ['P', 'P', 'P', 'P', 'P', 'I', 'P'],
+                ['P', 'P', 'G', 'I', 'P', 'P', 'P']]
+gas_stations = []
+for i in range(len(map1)):
+    for j in range(len(map1[0])):
+        if map1[i][j] == 'G':
+            gas_stations.append((i, j))
+print(gas_stations)
