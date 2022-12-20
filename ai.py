@@ -273,3 +273,77 @@ for passenger in passengers_list:
     priority_passengers.append((passenger, pass_prob, num_goals))
 sorted_elements = sorted(priority_passengers, key=lambda x: (x[1],x[2]), reverse= True)
 print(sorted_elements)
+
+# def value_iteration(states_dict, initial, dests_combined):
+#     ##initialize
+#     for hash_state in states_dict.keys():
+#         states_dict[hash_state]["reward"] = 0
+#         states_dict[hash_state]["value"] = 0
+#
+#     # rounds
+#     max_iter = 100  # Maximum number of iterations
+#     epsilon = 0.01  # Error tolerance
+#
+#     for i in range(max_iter):
+#         for hash_value in states_dict.keys():
+#             state = states_dict[hash_value]
+#             actions_tup = actions(state, initial)
+#             max_val = float('-inf')
+#             reward = 0
+#             if len(initial["taxis"].keys()) == 1:
+#                 for act in actions_tup:
+#                     sigma = 0
+#                     res = result(initial, state, act)
+#                     stoch_res = turn_to_stoch(res, dests_combined)
+#                     for s_res in stoch_res:
+#                         V = states_dict[s_res]["value"]
+#                         P = stoch_res[s_res]
+#                         sigma += V * P
+#                     reward = 0
+#                     if act == "reset":
+#                         reward -= 50
+#                     elif act == "terminate":
+#                         reward -= 10000
+#                     elif act[0] == "refuel":
+#                         reward -= 10
+#                     elif act[0] == "drop off":
+#                         reward += 100
+#                     elif act[0] == "wait":
+#                         reward -= 100
+#                     if sigma + reward >= max_val:
+#                         states_dict[hash_value]["action"] = act
+#                         states_dict[hash_value]["value"] = sigma + reward
+#                     max_val = max(max_val, sigma + reward)
+#             else:
+#                 for act in actions_tup:
+#                     sigma = 0
+#                     res = result(initial, state, act)
+#                     stoch_res = turn_to_stoch(res, dests_combined)
+#                     reward = 0
+#                     for s_res in stoch_res:
+#                         V = states_dict[s_res]["value"]
+#                         P = stoch_res[s_res]
+#                         sigma += V * P
+#                     for taxi_act in act:
+#                         if taxi_act == "reset":
+#                             reward -= 50
+#                         elif taxi_act == "terminate":
+#                             reward -= 10000
+#                         elif taxi_act[0] == "refuel":
+#                             reward -= 10
+#                         elif taxi_act[0] == "drop off":
+#                             reward += 100
+#                         elif taxi_act[0] == "wait":
+#                             reward -= 100
+#                     if sigma + reward >= max_val:
+#                         states_dict[hash_value]["action"] = act
+#                         states_dict[hash_value]["value"] = sigma + reward
+#                     max_val = max(max_val, sigma + reward)
+#
+#     return states_dict
+# for i in range(1, 101):
+#     print(i)
+# x = [0]* 101
+# print(len(x))
+x =[0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.14025, 8.116474999999998, 11.945077499999998, 15.640819749999995, 75.98442130312498, 77.20400729781247, 81.78623875173433, 83.33708187342282, 85.10557008363979, 89.1728633972154, 90.90650762599658, 94.80958015688434, 98.39661714701786, 102.19591035214077, 105.69383985886805, 114.11441807010813, 117.53488347280147, 121.420719402804, 124.80792465521334, 128.38491477745512, 131.93340623177284, 135.4273221414209, 139.0802489562769, 142.64625475530397, 146.3047874412136, 149.9574040906245, 153.98901899269643, 157.64795144571727, 161.53964360635615, 165.19974789216886, 168.89899540137668, 172.58455621554333, 176.2838542694525, 179.9860852213937, 183.69044388134148, 187.40445250575405, 191.11814220203496, 194.83853554252906, 198.561014491822, 202.2996874416069, 206.02705188108214, 209.76626573598188, 213.49868003837116, 217.23493772847237, 220.97200264616393, 224.71093488761377, 228.45116922719757, 232.19258394756022, 235.9353737345926, 239.67904282666254, 243.42380937001155, 247.16933309100864, 250.9161462818004, 254.6630840347793, 258.4110329163561, 262.159158932909, 265.90784208250886, 269.6568761987429, 273.40625778059075, 277.1559141206116, 280.9057952061472, 284.655865721072, 288.40606603176815, 292.1563691023713, 295.9067252168419, 299.6571263621925, 303.4074983800066, 307.15785243748206, 310.90813182013665, 314.65833236338943, 318.4084271664953, 322.1584010669333, 325.90823788033725, 329.6579244346305, 333.4074499828831, 337.15680455948177, 340.905981174941, 344.65497330185485, 348.40377761837686, 352.15238937241907, 355.9008084187119, 359.64903288682046, 363.3970640275946, 367.1449029745716, 370.8925521540764, 374.6400146153501, 378.38729413369833, 382.13439510269393, 385.88132239715037, 389.628081394482, 393.3746778027403, 397.1211177218302, 400.8674073941324, 404.61355339878486, 408.35956234678315, 412.10544103657577]
+print(x[100])
