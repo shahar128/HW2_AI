@@ -3,7 +3,21 @@ small_inputs = [
 
     # 3x3 1 taxi, 1 passenger w/ 2 possible goals, low fuel
     # 3x3 2 taxi, 2 passengers w/ 1 possible goals, low fuel
+    {
+        "optimal": True,
+        "map": [['P', 'P', 'P'],
+                ['P', 'G', 'P'],
+                ['P', 'P', 'P']],
+        "taxis": {'taxi 1': {"location": (0, 0), "fuel": 10, "capacity": 1}},
+        "passengers": {'Dana': {"location": (2, 2), "destination": (0, 0),
+                                "possible_goals": ((0, 0), (2, 2)), "prob_change_goal": 0.1}},
+        "turns to go": 100
+    }
 
+
+
+    # נתקענו
+    #
     # {
     #     "optimal": False,
     #     "map": [['P', 'P', 'G'],
@@ -19,6 +33,7 @@ small_inputs = [
     #     "turns to go": 100
     # },
     # # 3x4 1 taxi, 1 passenger w/ 2 possible goals, low fuel
+    #הצלחנו
     # {
     #     "optimal": False,
     #     "map": [['P', 'P', 'P', 'P'],
@@ -29,7 +44,8 @@ small_inputs = [
     #                             "possible_goals": ((0, 0), (2, 0)), "prob_change_goal": 0.01}},
     #     "turns to go": 100
     # },
-    # # 4x4 2 taxi, 1 passenger w/ 2 possible goals, no gas station
+    # 4x4 2 taxi, 1 passenger w/ 2 possible goals, no gas station
+    #הצלחנו
     # {
     #     "optimal": False,
     #     "map": [['P', 'P', 'P', 'P'],
@@ -42,20 +58,22 @@ small_inputs = [
     #                             "possible_goals": ((2, 3), (3, 2)), "prob_change_goal": 0.5}},
     #     "turns to go": 100
     # },
-    {
-        'optimal': False,
-        "turns to go": 50,
-        'map': [['P', 'P', 'P', 'P', 'P'],
-                ['P', 'I', 'P', 'G', 'P'],
-                ['P', 'P', 'I', 'P', 'P'],
-                ['P', 'P', 'P', 'I', 'P']],
-        'taxis': {'taxi 1': {'location': (1, 3), 'fuel': 10, 'capacity': 3}},
-        'passengers': {'Michael': {'location': (3, 4), 'destination': (2, 1),
-                                   "possible_goals": ((2, 1), (3, 4)), "prob_change_goal": 0.1},
-                       'Freyja': {'location': (0, 0), 'destination': (2, 1),
-                                  "possible_goals": ((2, 1), (0, 0)), "prob_change_goal": 0.3}}
-    },
+    # הצלחנו
+    # {
+    #     'optimal': False,
+    #     "turns to go": 50,
+    #     'map': [['P', 'P', 'P', 'P', 'P'],
+    #             ['P', 'I', 'P', 'G', 'P'],
+    #             ['P', 'P', 'I', 'P', 'P'],
+    #             ['P', 'P', 'P', 'I', 'P']],
+    #     'taxis': {'taxi 1': {'location': (1, 3), 'fuel': 10, 'capacity': 3}},
+    #     'passengers': {'Michael': {'location': (3, 4), 'destination': (2, 1),
+    #                                "possible_goals": ((2, 1), (3, 4)), "prob_change_goal": 0.1},
+    #                    'Freyja': {'location': (0, 0), 'destination': (2, 1),
+    #                               "possible_goals": ((2, 1), (0, 0)), "prob_change_goal": 0.3}}
+    # },
     #
+    #הצלחנו
     # {
     #     'optimal': False,
     #     "turns to go": 100,
@@ -70,6 +88,7 @@ small_inputs = [
     #                             'possible_goals': ((0, 2), (1, 0)), 'prob_change_goal': 0.3}},
     # },
     #
+    # הצלחנו עם 2 אנשים
     # {
     #     'optimal': False,
     #     "turns to go": 50,
@@ -87,6 +106,7 @@ small_inputs = [
     #                              'possible_goals': ((3, 2), (0, 0)), 'prob_change_goal': 0.2}},
     # },
     #
+    #הצלחנו
     # {
     #     'optimal': False,
     #     "turns to go": 100,
@@ -102,6 +122,7 @@ small_inputs = [
     #                             'possible_goals': ((4, 0),), 'prob_change_goal': 0.8}},
     # },
     #
+    # לא יודעת להתמודד
     # {
     #     'optimal': False,
     #     "turns to go": 100,
@@ -122,6 +143,7 @@ small_inputs = [
     #                              'possible_goals': ((2, 3), (2, 2), (4, 3)), 'prob_change_goal': 0.3}},
     # },
     #
+    # הצלחנו ללא עומר
     # {
     #     'optimal': False,
     #     "turns to go": 100,
@@ -140,6 +162,7 @@ small_inputs = [
     #                               'possible_goals': ((1, 4), (5, 0), (3, 4)), 'prob_change_goal': 0.2}},
     # },
     #
+    # לא יודעת להתמודד
     # {
     #     'optimal': False,
     #     "turns to go": 50,
@@ -158,6 +181,7 @@ small_inputs = [
     #                                 'possible_goals': ((1, 6), (3, 6), (4, 6)), 'prob_change_goal': 0.2}},
     # },
     #
+    # הצלחנו כשמורידים את אלו עם ההסתברות הכי גבוה ודבר שני להוריד אלו עם הכי הרבה יעדים
     # {
     #     'optimal': False,
     #     "turns to go": 100,
@@ -177,6 +201,7 @@ small_inputs = [
     #                              'possible_goals': ((3, 2),), 'prob_change_goal': 0.2}},
     # },
     #
+    # לא עובד עם בן אחד אפילו
     # {
     #     'optimal': False,
     #     "turns to go": 100,

@@ -242,6 +242,34 @@ grid = [['P', 'P', 'P', 'P', 'P'],
 #             grid[i][j] = 1
 #         else:
 #             grid[i][j] = 0
-print(grid)
-routingTables = createRoutingTables(grid)
-print(routingTables[(0, 2)][(3, 2)])
+# print(grid)
+# routingTables = createRoutingTables(grid)
+# print(routingTables[(0, 2)][(3, 2)])
+# li = [("dana")]
+# sorted(li,key=lambda sl: (-sl[0],sl[1]))
+
+initial = {
+        'optimal': False,
+        "turns to go": 50,
+        'map': [['P', 'P', 'P', 'P', 'P'],
+                ['P', 'I', 'P', 'P', 'P'],
+                ['P', 'P', 'I', 'P', 'P'],
+                ['P', 'P', 'P', 'I', 'P'],
+                ['P', 'P', 'P', 'G', 'P']],
+        'taxis': {'taxi 1': {'location': (1, 2), 'fuel': 18, 'capacity': 1}},
+        'passengers': {'Freyja': {'location': (2, 0), 'destination': (4, 2),
+                                  'possible_goals': ((4, 2), (2, 0)), 'prob_change_goal': 0.2},
+                       'Wolfgang': {'location': (2, 1), 'destination': (1, 4),
+                                    'possible_goals': ((1, 4), (0, 0)), 'prob_change_goal': 0.8},
+                       'Jacob': {'location': (3, 4), 'destination': (3, 2),
+                                 'possible_goals': ((3, 2), (0, 0)), 'prob_change_goal': 0.2}},
+    }
+
+passengers_list = list(initial["passengers"].keys())
+priority_passengers = []
+for passenger in passengers_list:
+    pass_prob = initial["passengers"][passenger]["prob_change_goal"]
+    num_goals = len(initial["passengers"][passenger]["possible_goals"])
+    priority_passengers.append((passenger, pass_prob, num_goals))
+sorted_elements = sorted(priority_passengers, key=lambda x: (x[1],x[2]), reverse= True)
+print(sorted_elements)
