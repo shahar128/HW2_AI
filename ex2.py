@@ -3,7 +3,7 @@ from itertools import product
 import json
 import copy
 import utils
-
+from collections import deque
 
 def my_product(inp):
     return (list(zip(inp.keys(), values)) for values in product(*inp.values()))
@@ -34,6 +34,54 @@ def possible_moves(location, matrix_size):
 
     # Return the list of possible moves
     return moves
+
+def createRoutingTables(grid):
+    # Initialize the graph with vertices for each tile in the grid
+    for i in range(len(grid)):
+        for j in range(len(grid[0])):
+            if grid[i][j] in ["G", "P"]:
+                grid[i][j] = 1
+            else:
+                grid[i][j] = 0
+    graph = {}
+    for i in range(len(grid)):
+        for j in range(len(grid[i])):
+            if grid[i][j] == 1:
+                graph[(i, j)] = []
+
+    # Add edges between adjacent tiles
+    for vertex in graph:
+        i, j = vertex
+        if i > 0 and grid[i - 1][j] == 1:
+            graph[vertex].append((i - 1, j))
+        if i < len(grid) - 1 and grid[i + 1][j] == 1:
+            graph[vertex].append((i + 1, j))
+        if j > 0 and grid[i][j - 1] == 1:
+            graph[vertex].append((i, j - 1))
+        if j < len(grid[i]) - 1 and grid[i][j + 1] == 1:
+            graph[vertex].append((i, j + 1))
+
+    # Create the routing tables for all vertices
+    routingTables = {}
+    for source in graph:
+        routingTables[source] = {}
+        queue = deque([source])
+        visited = set()
+        # Set the distance to the source vertex to 0
+        routingTables[source][source] = {"nextHop": source, "distance": 0}
+        while queue:
+            vertex = queue.popleft()
+            visited.add(vertex)
+            for neighbor in graph[vertex]:
+                if neighbor not in visited:
+                    routingTables[source][neighbor] = {
+                        "nextHop": vertex,
+                        "distance": routingTables[source][vertex]["distance"] + 1
+                    }
+                    queue.append(neighbor)
+
+    return routingTables
+
 
 
 def man_distance(point1, point2):
@@ -119,6 +167,7 @@ def actions(state, initial):
         return tuple(final_prod_actions)
 
 
+
 def result(initial, state, action):
     """Return the states and possibilities that results from executing the given
     action in the given state."""
@@ -137,6 +186,7 @@ def result(initial, state, action):
         if verb == "move":
             taxi_name = act[1]
             dest = act[2]
+
             new_state["state"]["taxis"][taxi_name]["location"] = dest
             new_state["state"]["taxis"][taxi_name]["fuel"] -= 1
 
@@ -450,6 +500,9 @@ class TaxiAgent:
         self.taxis_list = list(self.initial["taxis"].keys())
         self.gas_stations = []
         self.depth = 2
+        self.signal = False
+        grid = copy.deepcopy(self.map)
+        self.routing_table = createRoutingTables(grid)
         for i in range(len(self.map)):
             for j in range(len(self.map[0])):
                 if self.map[i][j] == 'G':
@@ -457,6 +510,7 @@ class TaxiAgent:
         del self.new_initial["optimal"]
         del self.new_initial["map"]
         del self.new_initial["turns to go"]
+        self.hash_val_initial = hash(json.dumps(self.new_initial))
         self.new_initial = {"state": self.new_initial, "probability": None, "action": None, "value": float("-inf")}
         self.Queue.append(self.new_initial)
         self.temp_init = self.new_initial
@@ -474,6 +528,7 @@ class TaxiAgent:
                 stoch_states = self.stochStates(res, dests)
                 for hash_val in stoch_states.keys():
                     self.Queue.append(stoch_states[hash_val])
+        # print(self.states_dict)
 
     def stochStates(self, state, dests):
         # del state["optimal"]
@@ -507,21 +562,26 @@ class TaxiAgent:
         return dests_combined
 
     def heuristic(self, state):
-        # implement your heuristic function here
-        # pass on taxi
         points = 0
+
+        # Consider the distance and gas remaining for each passenger-carrying taxi
         for passenger in state["state"]["passengers"].keys():
             if state["state"]["passengers"][passenger]["location"] in self.taxis_list:
                 pass_dest = state["state"]["passengers"][passenger]["destination"]
                 taxi_name = state["state"]["passengers"][passenger]["location"]
                 taxi_loc = state["state"]["taxis"][taxi_name]["location"]
                 man_dist = man_distance(taxi_loc, pass_dest)
-                if man_dist != 0:
-                    points += (1/man_dist)*1000
+                gas_remaining = state["state"]["taxis"][taxi_name]["fuel"]
+                if man_dist > gas_remaining:
+                    # Subtract a large value from the score if the taxi doesn't have enough gas to reach the destination
+                    points -= 1000
                 else:
-                    points += 2000
-        # empty taxi
+                    if man_dist != 0:
+                        points += (1 / man_dist) * 1000
+                    else:
+                        points += 2000
 
+        # Consider the distance to the nearest passenger for each empty taxi
         for taxi in state["state"]["taxis"].keys():
             min_values = []
             for passenger in state["state"]["passengers"].keys():
@@ -529,6 +589,10 @@ class TaxiAgent:
                     taxi_loc = state["state"]["taxis"][taxi]["location"]
                     pass_loc = state["state"]["passengers"][passenger]["location"]
                     man_dist = man_distance(taxi_loc, pass_loc)
+                    gas_remaining = state["state"]["taxis"][taxi]["fuel"]
+                    if man_dist > gas_remaining:
+                        # Subtract a value from the score if the taxi doesn't have enough gas to reach the passenger
+                        man_dist -= 100
                     min_values.append(man_dist)
             if len(min_values) != 0:
                 min_val = min(min_values)
@@ -536,34 +600,188 @@ class TaxiAgent:
                     points += (1 / min_val) * 100
                 else:
                     points += 200
+        return 1
+
+    # def heuristic(self, state):
+    #     # implement your heuristic function here
+    #     # pass on taxi
+    #     points = 0
+    #     for passenger in state["state"]["passengers"].keys():
+    #         if state["state"]["passengers"][passenger]["location"] in self.taxis_list:
+    #             pass_dest = state["state"]["passengers"][passenger]["destination"]
+    #             taxi_name = state["state"]["passengers"][passenger]["location"]
+    #             taxi_loc = state["state"]["taxis"][taxi_name]["location"]
+    #             man_dist = man_distance(taxi_loc, pass_dest)
+    #             if man_dist != 0:
+    #                 points += (1/man_dist)*1000
+    #             else:
+    #                 points += 2000
+    #     # empty taxi
+    #
+    #     for taxi in state["state"]["taxis"].keys():
+    #         min_values = []
+    #         for passenger in state["state"]["passengers"].keys():
+    #             if state["state"]["passengers"][passenger]["location"] not in self.taxis_list:
+    #                 taxi_loc = state["state"]["taxis"][taxi]["location"]
+    #                 pass_loc = state["state"]["passengers"][passenger]["location"]
+    #                 man_dist = man_distance(taxi_loc, pass_loc)
+    #                 min_values.append(man_dist)
+    #         if len(min_values) != 0:
+    #             min_val = min(min_values)
+    #             if min_val != 0:
+    #                 points += (1 / min_val) * 100
+    #             else:
+    #                 points += 200
+    #     return points
+
+    def empty_taxi(self, state,act):
+        points = 0
+        for taxi in state["state"]["taxis"].keys():
+            min_values = []
+            gas_remaining = state["state"]["taxis"][taxi]["fuel"]
+            taxi_loc = state["state"]["taxis"][taxi]["location"]
+            for passenger in state["state"]["passengers"].keys():
+                pass_loc = state["state"]["passengers"][passenger]["location"]
+                pass_dest = state["state"]["passengers"][passenger]["destination"]
+                if pass_loc not in self.taxis_list and pass_dest != pass_loc:
+                    distance = self.routing_table[taxi_loc][pass_loc]["distance"]
+                    min_values.append((distance, pass_loc))
+            if len(min_values):
+                min_pass = min(min_values, key=lambda tup: tup[0])
+                if min_pass[0] <= gas_remaining:
+                    go_to = self.routing_table[min_pass[1]][taxi_loc]["nextHop"]
+                    if act[2] == go_to:
+                        points += 100
+                        self.signal = True
+                    else:
+                        points -= 50
+                        self.signal = True
+                else:
+                    if len(self.gas_stations) != 0:
+                        min_gas_list = []
+                        for station in self.gas_stations:
+                            dist = self.routing_table[station][taxi_loc]["distance"]
+                            min_gas_list.append((dist, station))
+                        min_gas = min(min_gas_list, key=lambda tup: tup[0])
+                        if gas_remaining >= min_gas[0]:
+                            go_to = self.routing_table[min_gas[1]][taxi_loc]["nextHop"]
+                            if act[2] == go_to:
+                                points += 100
+                                self.signal = True
+                            else:
+                                points -= 50
+                                self.signal = True
+                        else:
+                            points -= 150
+
+        return points
+
+
+    def busy_taxi(self, state,act):
+        points = 0
+        for taxi in state["state"]["taxis"].keys():
+            min_values = []
+            gas_remaining = state["state"]["taxis"][taxi]["fuel"]
+            taxi_loc = state["state"]["taxis"][taxi]["location"]
+            for passenger in state["state"]["passengers"].keys():
+                if state["state"]["passengers"][passenger]["location"] == taxi:
+                    pass_dest = state["state"]["passengers"][passenger]["destination"]
+                    distance = self.routing_table[taxi_loc][pass_dest]["distance"]
+                    min_values.append((distance, pass_dest))
+            if len(min_values):
+                min_pass = min(min_values, key=lambda tup: tup[0])
+                if min_pass[0] <= gas_remaining:
+                    go_to = self.routing_table[min_pass[1]][taxi_loc]["nextHop"]
+                    if act[2] == go_to:
+                        points += 150
+                        self.signal = True
+                    else:
+                        points -= 100
+                        self.signal = True
+                else:
+                    if len(self.gas_stations) != 0:
+                        min_gas_list = []
+                        for station in self.gas_stations:
+                            dist = self.routing_table[station][taxi_loc]["distance"]
+                            min_gas_list.append((dist, station))
+                        min_gas = min(min_gas_list, key=lambda tup: tup[0])
+                        if gas_remaining >= min_gas[0]:
+                            go_to = self.routing_table[min_gas[1]][taxi_loc]["nextHop"]
+                            if act[2] == go_to:
+                                points += 150
+                                self.signal = True
+                            else:
+                                points -= 100
+                                self.signal = True
+                        else:
+                            points -= 200
         return points
 
 
     def reward(self, state, action):
         # return the reward for taking the given action in the given state
+        if len(self.taxis_list) == 1:
+            action = [action]
         points = 0
-        if len(action) == 3:
-            verb = action[0]
-            if verb == "pick up":
-                points += 200
-            elif verb == "drop off":
-                points += 2000
-            elif verb == "wait":
-                points -= 50
-            # elif verb == "refuel":
-        elif action == ('reset',):
-            in_loc = True
-            for passenger in state["state"]["passengers"].keys():
-                pass_loc = state["state"]["passengers"][passenger]["location"]
-                pass_dest = state["state"]["passengers"][passenger]["destination"]
-                if pass_dest != pass_loc:
-                    in_loc = False
-                    break
-            if in_loc:
-                points += 1000
+        for act in action:
 
+            if len(act) == 3:
+                verb = act[0]
+                if verb == "pick up":
+                    points += 100
+                elif verb == "drop off":
+                    points += 200
+                elif verb == "wait":
+                    points -= 50
+                elif verb == "move":
 
+                    points += self.empty_taxi(state,act)
+                    points += self.busy_taxi(state,act)
+
+                elif verb == "refuel":
+                    for taxi in state["state"]["taxis"].keys():
+                        min_values = []
+                        for passenger in state["state"]["passengers"].keys():
+                            if state["state"]["passengers"][passenger]["location"] not in self.taxis_list:
+                                taxi_loc = state["state"]["taxis"][taxi]["location"]
+                                pass_loc = state["state"]["passengers"][passenger]["location"]
+                                man_dist = man_distance(taxi_loc, pass_loc)
+                                min_values.append(man_dist)
+                        if len(min_values) != 0:
+                            min_val = min(min_values)
+                            if min_val > state["state"]["taxis"][taxi]["fuel"]:
+                                points += 1000
+
+            elif act == ('reset',):
+
+                temp = 0
+                self.signal = False
+                # temp += self.empty_taxi(state, act)
+                # temp += self.busy_taxi(state, act)
+                if not self.signal:
+                    points += 0
+
+                in_loc = True
+                for passenger in state["state"]["passengers"].keys():
+                    pass_loc = state["state"]["passengers"][passenger]["location"]
+                    pass_dest = state["state"]["passengers"][passenger]["destination"]
+                    if pass_dest != pass_loc:
+                        in_loc = False
+                        break
+                if in_loc:
+                    points += 0
+                have_fuel = False
+                for taxi in self.taxis_list:
+                    fuel = state["state"]["taxis"][taxi]["fuel"]
+                    taxi_loc = state["state"]["taxis"][taxi]["location"]
+                    taxi_tile = self.map[taxi_loc[0]][taxi_loc[1]]
+                    if (fuel == 0 and taxi_tile == 'G') or fuel > 0:
+                        have_fuel = True
+                        break
+                if not have_fuel:
+                    points += 0
         return points
+
 
     def mdp(self, state, depth):
         if depth == 0:
@@ -789,13 +1007,16 @@ class TaxiAgent:
         del new_state["turns to go"]
         hash_val = hash(json.dumps((new_state)))
         action = self.states_dict[hash_val]["action"]
-        print(self.states_dict[hash_val])
+        # print(self.states_dict[hash_val])
+        if hash_val == self.hash_val_initial and action == ('reset',):
+            return 'terminate'
         print("i did",action)
+        # if len(state["taxis"].keys()) == 1:
+        if action == ('reset',):
+            return 'reset'
+        elif action == ('terminate',):
+            return 'terminate'
+        # else:
         if len(state["taxis"].keys()) == 1:
-            if action == ('reset',):
-                return 'reset'
-            elif action == ('terminate',):
-                return 'terminate'
-            else:
-                return ((action,))
+            return ((action,))
         return action

@@ -398,15 +398,21 @@ initial =      {
 #         for hash_val in stoch_states.keys():
 #             Queue.append(stoch_states[hash_val])
 # print(len(states_dict.keys()))
-map1 = [['P', 'P', 'P', 'I', 'P', 'P', 'P'],
-                ['P', 'I', 'P', 'P', 'P', 'P', 'I'],
-                ['P', 'P', 'I', 'P', 'P', 'I', 'P'],
-                ['P', 'G', 'P', 'I', 'P', 'G', 'P'],
-                ['P', 'P', 'P', 'P', 'P', 'I', 'P'],
-                ['P', 'P', 'G', 'I', 'P', 'P', 'P']]
-gas_stations = []
-for i in range(len(map1)):
-    for j in range(len(map1[0])):
-        if map1[i][j] == 'G':
-            gas_stations.append((i, j))
-print(gas_stations)
+# map1 = [['P', 'P', 'P', 'I', 'P', 'P', 'P'],
+#                 ['P', 'I', 'P', 'P', 'P', 'P', 'I'],
+#                 ['P', 'P', 'I', 'P', 'P', 'I', 'P'],
+#                 ['P', 'G', 'P', 'I', 'P', 'G', 'P'],
+#                 ['P', 'P', 'P', 'P', 'P', 'I', 'P'],
+#                 ['P', 'P', 'G', 'I', 'P', 'P', 'P']]
+# gas_stations = []
+# for i in range(len(map1)):
+#     for j in range(len(map1[0])):
+#         if map1[i][j] == 'G':
+#             gas_stations.append((i, j))
+# print(gas_stations)
+act1 = (("move", "taxi2", (1,0)), ("move", "taxi2", (1,0)))
+act = ("move", "taxi2", (1,0))
+act = [act]
+print([act1])
+for a in act:
+    print(a)
