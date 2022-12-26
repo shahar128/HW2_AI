@@ -410,9 +410,15 @@ initial =      {
 #         if map1[i][j] == 'G':
 #             gas_stations.append((i, j))
 # print(gas_stations)
-act1 = (("move", "taxi2", (1,0)), ("move", "taxi2", (1,0)))
-act = ("move", "taxi2", (1,0))
-act = [act]
-print([act1])
-for a in act:
-    print(a)
+# act1 = (("move", "taxi2", (1,0)), ("move", "taxi2", (1,0)))
+# act = ("move", "taxi2", (1,0))
+# act = [act]
+# print([act1])
+# for a in act:
+#     print(a)
+turns = 100
+i = 0
+temp_dict = {}
+for i in range(turns + 1):
+    temp_dict[i] = 0
+print(temp_dict)

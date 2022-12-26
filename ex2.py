@@ -249,42 +249,18 @@ def turn_to_stoch(state, dests):
 # def policy_iteration()
 
 def value_iteration(states_dict, initial, dests_combined):
+    turns = initial["turns to go"]
     ##initialize
+    temp_dict = {}
+    for i in range(turns + 1):
+        temp_dict[i] = 0
     for hash_state in states_dict.keys():
-        # state = states_dict[hash_state]
-        # actions_tup = actions(state, initial)
-        # max_val = float('-inf')
-        # for act in actions_tup:
-        #     if act == "reset":
-        #         max_val = max(max_val, -50)
-        #     elif act == "terminate":
-        #         max_val = max(max_val, 0)
-        #     else:
-        #         temp_val = 0
-        #         num_taxis = len(initial["taxis"].keys())
-        #         if num_taxis > 1:
-        #             for taxi_act in act:
-        #                 if taxi_act[0] == "refuel":
-        #                     temp_val -= 10
-        #                 elif taxi_act[0] == 'drop off':
-        #                     temp_val += 100
-        #             max_val = max(max_val, temp_val)
-        #         else:
-        #             if act[0] == "refuel":
-        #                 temp_val -= 10
-        #             elif act[0] == 'drop off':
-        #                 #to add the act
-        #                 temp_val += 100
-        #             max_val = max(max_val, temp_val)
-
-        states_dict[hash_state]["reward"] = 0
-        states_dict[hash_state]["value"] = [0]*102
+        # states_dict[hash_state]["reward"] = 0
+        states_dict[hash_state]["value"] = copy.deepcopy(temp_dict)
 
     # rounds
-    max_iter = 100  # Maximum number of iterations
-    epsilon = 0.01  # Error tolerance
 
-    for i in range(1, max_iter + 2):
+    for i in range(1, turns + 1):
         for hash_value in states_dict.keys():
             state = states_dict[hash_value]
             actions_tup = actions(state, initial)
@@ -318,6 +294,9 @@ def value_iteration(states_dict, initial, dests_combined):
                     # if sigma + reward >= max_val:
                 states_dict[hash_value]["action"][i] = max_util[1]
                 states_dict[hash_value]["value"][i] = max_util[0]
+                # if max_util[0]!= 0:
+                #     print(max_util[0])
+
                     # max_val = max(max_val, sigma + reward)
             else:
                 for act in actions_tup:
@@ -349,13 +328,18 @@ def value_iteration(states_dict, initial, dests_combined):
     return states_dict
 
 
-ids = ["avukadoareyoubashel", "weloveofer"]
+ids = ["206968281", "318238839"]
 
 
 class OptimalTaxiAgent:
     def __init__(self, initial):
         self.initial = initial
         self.states_dict = {}
+        self.turns = self.initial["turns to go"]
+        temp_dict = {}
+        for i in range(self.turns + 1):
+            temp_dict[i] = 0
+        self.temp_dict = temp_dict
 
         map = initial['map']
         len_row = len(map)
@@ -462,17 +446,19 @@ class OptimalTaxiAgent:
 
                 temp_state = {"taxis": taxis_dict, "passengers": passengers_dict}
                 hash_val = hash(json.dumps(temp_state))
-                self.states_dict[hash_val] = {"state": temp_state, "action": [0]*102, "value": 0, "reward": 0}
+
+                self.states_dict[hash_val] = {"state": temp_state, "action": copy.deepcopy(self.temp_dict), "value": 0, "reward": 0}
         self.states_dict = value_iteration(self.states_dict, self.initial, dests_combined)
-        x =     {
-        "taxis": {'taxi 1': {"location": (0, 0), "fuel": 10, "capacity": 1}},
-        "passengers": {'Dana': {"location": (2, 2), "destination": (0, 0),
-                                "possible_goals": ((0, 0), (2, 2)), "prob_change_goal": 0.1}}
-    }
-        xx = hash(json.dumps(x))
-        print(self.states_dict[xx])
+    #     x =     {
+    #     "taxis": {'taxi 1': {"location": (0, 0), "fuel": 10, "capacity": 1}},
+    #     "passengers": {'Dana': {"location": (2, 2), "destination": (0, 0),
+    #                             "possible_goals": ((0, 0), (2, 2)), "prob_change_goal": 0.1}}
+    # }
+    #     xx = hash(json.dumps(x))
+    #     print(self.states_dict[xx])
 
     def act(self, state):
+        print(state)
         new_state = copy.deepcopy(state)
         del new_state["optimal"]
         del new_state["map"]
@@ -486,7 +472,7 @@ class OptimalTaxiAgent:
         #             new_state["taxis"][taxi]["currCap"] += 1
 
         hash_val = hash(json.dumps((new_state)))
-        action = self.states_dict[hash_val]["action"][turn_to_go+ 1]
+        action = self.states_dict[hash_val]["action"][turn_to_go]
         print(action)
         if len(state["taxis"].keys()) == 1:
             if action == ('reset',):
