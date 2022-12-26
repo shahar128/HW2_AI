@@ -247,82 +247,85 @@ def turn_to_stoch(state, dests):
 
 
 # def policy_iteration()
+from datetime import datetime
+
 
 def value_iteration(states_dict, initial, dests_combined):
     turns = initial["turns to go"]
+    our_initial = copy.deepcopy(initial)
+    del our_initial["optimal"]
+    del our_initial["map"]
+    del our_initial["turns to go"]
+
     ##initialize
     temp_dict = {}
+
     for i in range(turns + 1):
         temp_dict[i] = 0
     for hash_state in states_dict.keys():
-        # states_dict[hash_state]["reward"] = 0
+        state = states_dict[hash_state]
+        actions_tup = actions(state, initial)
+        for act in actions_tup:
+            res = result(initial, state, act)
+            stoch_res = turn_to_stoch(res, dests_combined)
+            states_dict[hash_state]['action_tup'][act] = stoch_res
         states_dict[hash_state]["value"] = copy.deepcopy(temp_dict)
 
     # rounds
 
     for i in range(1, turns + 1):
         for hash_value in states_dict.keys():
-            state = states_dict[hash_value]
-            actions_tup = actions(state, initial)
             max_val = float('-inf')
             reward = 0
             if len(initial["taxis"].keys()) == 1:
                 utilities = []
-                for act in actions_tup:
+                for act in states_dict[hash_value]["action_tup"].keys():
                     sigma = 0
-                    res = result(initial, state, act)
                     if act == "reset" or act == ("reset",):
-                        hash_val1 = hash(json.dumps(res))
+                        hash_val1 = hash(json.dumps(our_initial))
                         sigma = states_dict[hash_val1]["value"][i-1]
                     else:
-                        stoch_res = turn_to_stoch(res, dests_combined)
-                        for s_res in stoch_res:
+                        for s_res in states_dict[hash_value]["action_tup"][act].keys():
                             V = states_dict[s_res]["value"][i-1]
-                            P = stoch_res[s_res]
+                            P = states_dict[hash_value]["action_tup"][act][s_res]
                             sigma += V * P
                     reward = 0
                     if act == "reset" or act == ("reset",):
                         reward -= 50
-                    elif act == "terminate":
-                        reward -= 10000
                     elif act[0] == "refuel":
                         reward -= 10
                     elif act[0] == "drop off":
                         reward += 100
                     utilities.append((sigma + reward, act))
                 max_util = max(utilities, key=lambda tup: tup[0])
-                    # if sigma + reward >= max_val:
                 states_dict[hash_value]["action"][i] = max_util[1]
                 states_dict[hash_value]["value"][i] = max_util[0]
-                # if max_util[0]!= 0:
-                #     print(max_util[0])
 
-                    # max_val = max(max_val, sigma + reward)
             else:
-                for act in actions_tup:
+                utilities = []
+                for act in states_dict[hash_value]["action_tup"].keys():
                     sigma = 0
-                    res = result(initial, state, act)
-                    stoch_res = turn_to_stoch(res, dests_combined)
+                    if act == "reset" or act == ("reset",):
+                        hash_val1 = hash(json.dumps(our_initial))
+                        sigma = states_dict[hash_val1]["value"][i-1]
+                    else:
+                        for s_res in states_dict[hash_value]["action_tup"][act].keys():
+                            V = states_dict[s_res]["value"][i - 1]
+                            P = states_dict[hash_value]["action_tup"][act][s_res]
+                            sigma += V * P
                     reward = 0
-                    for s_res in stoch_res:
-                        V = states_dict[s_res]["value"]
-                        P = stoch_res[s_res]
-                        sigma += V * P
-                    for taxi_act in act:
-                        if taxi_act == "reset":
-                            reward -= 50
-                        elif taxi_act == "terminate":
-                            reward -= 10000
-                        elif taxi_act[0] == "refuel":
-                            reward -= 10
-                        elif taxi_act[0] == "drop off":
-                            reward += 100
-                        elif taxi_act[0] == "wait":
-                            reward -= 100
-                    if sigma + reward >= max_val:
-                        states_dict[hash_value]["action"] = act
-                        states_dict[hash_value]["value"] = sigma + reward
-                    max_val = max(max_val, sigma + reward)
+                    if act =="reset" or act == ("reset",):
+                        reward -= 50
+                    else:
+                        for taxi_act in act:
+                            if taxi_act[0] == "refuel":
+                                reward -= 10
+                            elif taxi_act[0] == "drop off":
+                                reward += 100
+                    utilities.append((sigma + reward, act))
+                max_util = max(utilities, key=lambda tup: tup[0])
+                states_dict[hash_value]["action"][i] = max_util[1]
+                states_dict[hash_value]["value"][i] = max_util[0]
     # print(states_dict)
 
     return states_dict
@@ -333,6 +336,7 @@ ids = ["206968281", "318238839"]
 
 class OptimalTaxiAgent:
     def __init__(self, initial):
+
         self.initial = initial
         self.states_dict = {}
         self.turns = self.initial["turns to go"]
@@ -447,8 +451,11 @@ class OptimalTaxiAgent:
                 temp_state = {"taxis": taxis_dict, "passengers": passengers_dict}
                 hash_val = hash(json.dumps(temp_state))
 
-                self.states_dict[hash_val] = {"state": temp_state, "action": copy.deepcopy(self.temp_dict), "value": 0, "reward": 0}
+                self.states_dict[hash_val] = {"state": temp_state, "action": copy.deepcopy(self.temp_dict), "value": 0, 'action_tup': {}}
+        print(len(self.states_dict))
+
         self.states_dict = value_iteration(self.states_dict, self.initial, dests_combined)
+
     #     x =     {
     #     "taxis": {'taxi 1': {"location": (0, 0), "fuel": 10, "capacity": 1}},
     #     "passengers": {'Dana': {"location": (2, 2), "destination": (0, 0),
@@ -458,35 +465,24 @@ class OptimalTaxiAgent:
     #     print(self.states_dict[xx])
 
     def act(self, state):
-        print(state)
         new_state = copy.deepcopy(state)
         del new_state["optimal"]
         del new_state["map"]
         turn_to_go = state["turns to go"]
         del new_state["turns to go"]
-        # for taxi in new_state["taxis"].keys():
-        #     new_state["taxis"][taxi]["currCap"] = 0
-        #     for passenger in new_state["passengers"].keys():
-        #         #########not good
-        #         if new_state["passengers"][passenger]["location"] == taxi:
-        #             new_state["taxis"][taxi]["currCap"] += 1
-
         hash_val = hash(json.dumps((new_state)))
+        # print(self.states_dict[hash_val])
         action = self.states_dict[hash_val]["action"][turn_to_go]
         print(action)
         if len(state["taxis"].keys()) == 1:
             if action == ('reset',):
                 # print((action))
                 return 'reset'
-            elif action == ('terminate',):
-                return 'terminate'
             else:
-                # print(state)
-                # print(action)
-                # print(state)
                 return ((action,))
-        # print(action)
-        # print(state)
+        else:
+            if action == ('reset',):
+                return 'reset'
         return action
 
 
