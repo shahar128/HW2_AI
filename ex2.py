@@ -456,13 +456,12 @@ class OptimalTaxiAgent:
 
         self.states_dict = value_iteration(self.states_dict, self.initial, dests_combined)
 
-    #     x =     {
-    #     "taxis": {'taxi 1': {"location": (0, 0), "fuel": 10, "capacity": 1}},
-    #     "passengers": {'Dana': {"location": (2, 2), "destination": (0, 0),
-    #                             "possible_goals": ((0, 0), (2, 2)), "prob_change_goal": 0.1}}
-    # }
-    #     xx = hash(json.dumps(x))
-    #     print(self.states_dict[xx])
+        x = copy.deepcopy(self.initial)
+        del x["optimal"]
+        del x["map"]
+        del x["turns to go"]
+        xx = hash(json.dumps(x))
+        print(self.states_dict[xx])
 
     def act(self, state):
         new_state = copy.deepcopy(state)
@@ -489,6 +488,7 @@ class OptimalTaxiAgent:
 class TaxiAgent:
     def __init__(self, initial):
         self.initial = initial
+        self.passengers_to_del = []
         passengers_list = list(self.initial["passengers"].keys())
         if len(passengers_list) > 2:
             priority_passengers = []
@@ -500,9 +500,11 @@ class TaxiAgent:
             num_to_del = len(passengers_list) - 2
             for i in range(num_to_del):
                 pass_name = sorted_elements[i][0]
+                self.passengers_to_del.append(pass_name)
                 # del self.new_initial["passengers"][pass_name]
                 del self.initial["passengers"][pass_name]
-            print(self.initial)
+            # print(self.initial)
+        self.problematic_taxi = []
         self.states_dict = {}
         self.Queue = utils.FIFOQueue()
         self.new_initial = copy.deepcopy(self.initial)
@@ -511,22 +513,25 @@ class TaxiAgent:
         self.gas_stations = []
         self.depth = 2
         self.signal = False
+        self.forbidden_tiles = []
         grid = copy.deepcopy(self.map)
         self.routing_table = createRoutingTables(grid)
         for i in range(len(self.map)):
             for j in range(len(self.map[0])):
                 if self.map[i][j] == 'G':
                     self.gas_stations.append((i, j))
+                elif self.map[i][j] == 'I':
+                    self.forbidden_tiles.append((i, j))
         del self.new_initial["optimal"]
         del self.new_initial["map"]
         del self.new_initial["turns to go"]
-
 
         self.hash_val_initial = hash(json.dumps(self.new_initial))
         self.new_initial = {"state": self.new_initial, "probability": None, "action": None, "value": float("-inf")}
         self.Queue.append(self.new_initial)
         self.temp_init = self.new_initial
         while len(self.Queue) != 0:
+            self.problematic_taxi = []
             node = self.Queue.pop()
             hashed_val = hash(json.dumps(node["state"]))
             if hashed_val not in self.states_dict.keys():
@@ -698,8 +703,13 @@ class TaxiAgent:
             for passenger in state["state"]["passengers"].keys():
                 if state["state"]["passengers"][passenger]["location"] == taxi:
                     pass_dest = state["state"]["passengers"][passenger]["destination"]
+                    if pass_dest in self.forbidden_tiles:
+                        self.problematic_taxi.append(taxi)
+                        continue
                     distance = self.routing_table[taxi_loc][pass_dest]["distance"]
                     min_values.append((distance, pass_dest))
+                    if taxi in self.problematic_taxi:
+                        self.problematic_taxi.remove(taxi)
             if len(min_values):
                 min_pass = min(min_values, key=lambda tup: tup[0])
                 if min_pass[0] <= gas_remaining:
@@ -739,13 +749,11 @@ class TaxiAgent:
             if len(act) == 3:
                 verb = act[0]
                 if verb == "pick up":
+                    ############ to add??????
                     points += 100
                 elif verb == "drop off":
                     points += 200
-                elif verb == "wait":
-                    points -= 50
                 elif verb == "move":
-
                     points += self.empty_taxi(state,act)
                     points += self.busy_taxi(state,act)
             elif len(act) == 2:
@@ -765,6 +773,11 @@ class TaxiAgent:
                             min_pass = min(min_values, key=lambda tup: tup[0])
                             if min_pass[0] == gas_remaining:
                                 points += 200
+                elif act[0] == "wait":
+                    if act[1] in self.problematic_taxi:
+                        points += 101
+                    else:
+                        points -= 50
 
             elif act == 'reset' or act == ("reset",):
                 temp = 0
@@ -1017,10 +1030,12 @@ class TaxiAgent:
         del new_state["optimal"]
         del new_state["map"]
         del new_state["turns to go"]
-        if len(new_state["passengers"].keys()) == 3:
-            del new_state["passengers"]["Wolfgang"]
+        if len(new_state["passengers"].keys()) > 2:
+            for pass_name in self.passengers_to_del:
+                del new_state["passengers"][pass_name]
         hash_val = hash(json.dumps((new_state)))
         action = self.states_dict[hash_val]["action"]
+        print(state)
 
         # print(self.states_dict[hash_val])
         if hash_val == self.hash_val_initial and action == ('reset',):

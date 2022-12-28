@@ -15,6 +15,7 @@ INIT_TIME_LIMIT = 300
 TURN_TIME_LIMIT = 0.1
 
 
+
 def initiate_agent(state):
     """
     initiate the agent with the given state
@@ -41,7 +42,7 @@ class TaxiStochasticProblem:
         self.state = deepcopy(an_input)
         self.graph = self.build_graph()
         start = time.perf_counter()
-        self.agent = initiate_agent(self.state)
+        self.agent = initiate_agent(deepcopy(self.state))
         end = time.perf_counter()
         if end - start > INIT_TIME_LIMIT:
             logging.critical("timed out on constructor")
@@ -54,7 +55,7 @@ class TaxiStochasticProblem:
         """
         while self.state["turns to go"]:
             start = time.perf_counter()
-            action = self.agent.act(self.state)
+            action = self.agent.act(deepcopy(self.state))
             end = time.perf_counter()
             if end - start > TURN_TIME_LIMIT:
                 logging.critical(f"timed out on an action")
@@ -69,7 +70,6 @@ class TaxiStochasticProblem:
         """
         check if the action is legal
         """
-
         def _is_move_action_legal(move_action):
             taxi_name = move_action[1]
             if taxi_name not in self.state['taxis'].keys():
@@ -90,8 +90,7 @@ class TaxiStochasticProblem:
             if self.state['taxis'][taxi_name]['capacity'] <= 0:
                 return False
             # check passenger is not in his destination
-            if self.state['passengers'][passenger_name]['destination'] == self.state['passengers'][passenger_name][
-                'location']:
+            if self.state['passengers'][passenger_name]['destination'] == self.state['passengers'][passenger_name]['location']:
                 return False
             return True
 
@@ -100,6 +99,9 @@ class TaxiStochasticProblem:
             passenger_name = drop_action[2]
             # check same position
             if self.state['taxis'][taxi_name]['location'] != self.state['passengers'][passenger_name]['destination']:
+                return False
+            # check passenger is in the taxi
+            if self.state['passengers'][passenger_name]['location'] != taxi_name:
                 return False
             return True
 
@@ -189,7 +191,6 @@ class TaxiStochasticProblem:
             self.reset_environment()
             return
         if action == "terminate":
-            print("ofer")
             self.terminate_execution()
         for atomic_action in action:
             self.apply_atomic_action(atomic_action)
@@ -213,12 +214,10 @@ class TaxiStochasticProblem:
             self.state['passengers'][passenger_name]['location'] = self.state['taxis'][taxi_name]['location']
             self.state['taxis'][taxi_name]['capacity'] += 1
             self.score += DROP_IN_DESTINATION_REWARD
-            print(self.score)
             return
         elif atomic_action[0] == 'refuel':
             self.state['taxis'][taxi_name]['fuel'] = self.initial_state['taxis'][taxi_name]['fuel']
             self.score -= REFUEL_PENALTY
-            print(self.score)
             return
         elif atomic_action[0] == 'wait':
             return
@@ -260,8 +259,8 @@ class TaxiStochasticProblem:
         build the graph of the problem
         """
         n, m = len(self.initial_state['map']), len(self.initial_state['map'][0])
+        g = nx.grid_graph(dim= [m,n])
         # g = nx.grid_graph((m, n))
-        g = nx.grid_graph(dim=[m, n])
         nodes_to_remove = []
         for node in g:
             if self.initial_state['map'][node[0]][node[1]] == 'I':
@@ -269,7 +268,6 @@ class TaxiStochasticProblem:
         for node in nodes_to_remove:
             g.remove_node(node)
         return g
-
 
 def main():
     """
