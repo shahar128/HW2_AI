@@ -416,9 +416,50 @@ initial =      {
 # print([act1])
 # for a in act:
 #     print(a)
-turns = 100
-i = 0
-temp_dict = {}
-for i in range(turns + 1):
-    temp_dict[i] = 0
-print(temp_dict)
+# turns = 100
+# i = 0
+# temp_dict = {}
+# for i in range(turns + 1):
+#     temp_dict[i] = 0
+# print(temp_dict)
+initial =  {
+        'optimal': False,
+        "turns to go": 100,
+        'map': [['P', 'P', 'P', 'I', 'P', 'P', 'P'],
+                ['P', 'I', 'P', 'P', 'P', 'P', 'I'],
+                ['P', 'P', 'I', 'P', 'P', 'I', 'P'],
+                ['P', 'G', 'P', 'I', 'P', 'G', 'P'],
+                ['P', 'P', 'P', 'P', 'P', 'I', 'P'],
+                ['P', 'P', 'G', 'I', 'P', 'P', 'P']],
+        'taxis': {'taxi 1': {'location': (5, 6), 'fuel': 21, 'capacity': 3}},
+        'passengers': {'Omer': {'location': (1, 5), 'destination': (2, 2),
+                                'possible_goals': ((2, 2), (4, 3)), 'prob_change_goal': 0.2},
+                       'Roee': {'location': (2, 1), 'destination': (4, 3),
+                                'possible_goals': ((4, 3), (2, 2)), 'prob_change_goal': 0.5},
+                       'Dana': {'location': (4, 2), 'destination': (5, 2),
+                                'possible_goals': ((4, 3), (2, 2), (5, 2)), 'prob_change_goal': 0.2},
+                       'Efrat': {'location': (5, 6), 'destination': (2, 3),
+                                 'possible_goals': ((2, 3), (2, 2), (4, 3)), 'prob_change_goal': 0.3}},
+    }
+passengers_list = list(initial["passengers"].keys())
+for pass_name in passengers_list:
+    set_of_dests = set()
+    for tup in initial["passengers"][pass_name]['possible_goals']:
+        set_of_dests.add(tup)
+    set_of_dests.add(initial["passengers"][pass_name]["destination"])
+print(set_of_dests)
+
+l = []
+map = [['P', 'P', 'P', 'I', 'P', 'P', 'P'],
+                ['P', 'I', 'P', 'P', 'P', 'P', 'I'],
+                ['P', 'P', 'I', 'P', 'P', 'I', 'P'],
+                ['P', 'G', 'P', 'I', 'P', 'G', 'P'],
+                ['P', 'P', 'P', 'P', 'P', 'I', 'P'],
+                ['P', 'P', 'G', 'I', 'P', 'P', 'P']]
+for i in range(len(map)):
+    for j in range(len(map[0])):
+        if map[i][j] == 'I':
+            l.append((i,j))
+print(l)
+
+["dana"]
